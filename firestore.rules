@@ -23,9 +23,22 @@ service cloud.firestore {
         && usuarioAtual().data.ativo == true;
     }
 
+    function papelAtual() {
+      return estaAtivo() ? usuarioAtual().data.role : null;
+    }
+
     function ehAdministrador() {
+      return papelAtual() == "administrador";
+    }
+
+    function ehGestao() {
+      return papelAtual() in ["administrador", "master", "gestor"];
+    }
+
+    function ehProprioColaborador(colaboradorId) {
       return estaAtivo()
-        && usuarioAtual().data.role == "administrador";
+        && "colaboradorId" in usuarioAtual().data
+        && usuarioAtual().data.colaboradorId == colaboradorId;
     }
 
     match /usuarios/{userId} {
@@ -36,6 +49,12 @@ service cloud.firestore {
         );
 
       allow create, update, delete: if ehAdministrador();
+    }
+
+    match /colaboradores/{colaboradorId} {
+      allow read: if ehGestao() || ehProprioColaborador(colaboradorId);
+      allow create, update: if ehGestao();
+      allow delete: if false;
     }
 
     match /{document=**} {

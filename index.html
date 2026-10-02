@@ -136,7 +136,7 @@
       </nav>
 
       <div class="sidebar-footer">
-        <span>V1.0 — Base inicial</span>
+        <span>V1.0 — Colaboradores</span>
       </div>
     </aside>
 
@@ -173,8 +173,8 @@
         <div class="metric-grid">
           <article class="metric-card">
             <span class="metric-label">Colaboradores</span>
-            <strong>—</strong>
-            <small>Módulo em construção</small>
+            <strong id="collaborator-count-metric">0</strong>
+            <small id="collaborator-count-caption">Carregando cadastros...</small>
           </article>
           <article class="metric-card">
             <span class="metric-label">Obras ativas</span>
@@ -226,6 +226,52 @@
         </div>
       </section>
 
+
+      <section id="collaborators-panel" class="content-panel hidden">
+        <div class="module-header">
+          <div>
+            <span class="eyebrow">CADASTRO CORPORATIVO</span>
+            <h2>Colaboradores</h2>
+            <p>Base individual utilizada nas fichas de EPI, movimentações, obras e vínculos de acesso.</p>
+          </div>
+          <button id="new-collaborator-button" class="module-primary-button" type="button">+ Novo colaborador</button>
+        </div>
+
+        <div class="module-toolbar">
+          <div class="search-field">
+            <span aria-hidden="true">⌕</span>
+            <input id="collaborator-search" type="search" placeholder="Pesquisar por nome, matrícula, função, setor ou gestor" autocomplete="off" />
+          </div>
+          <span id="collaborator-summary" class="module-summary">Carregando...</span>
+        </div>
+
+        <div class="table-card">
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Nome completo</th>
+                  <th>Matrícula/cadastro</th>
+                  <th>Cargo/função</th>
+                  <th>Setor/contrato</th>
+                  <th>Admissão</th>
+                  <th>Gestor responsável</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="collaborator-table-body"></tbody>
+            </table>
+          </div>
+
+          <div id="collaborator-empty" class="empty-state">
+            <div class="empty-state-icon">◉</div>
+            <strong>Nenhum colaborador cadastrado</strong>
+            <span>Use o botão Novo colaborador para iniciar o cadastro.</span>
+          </div>
+        </div>
+      </section>
+
       <section id="placeholder-panel" class="content-panel hidden">
         <div class="placeholder-card">
           <div class="placeholder-icon">⌁</div>
@@ -238,6 +284,65 @@
     </div>
 
     <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+  </div>
+
+
+  <div id="collaborator-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="collaborator-modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">COLABORADOR</span>
+          <h2 id="collaborator-modal-title">Novo colaborador</h2>
+        </div>
+        <button id="close-collaborator-modal" class="modal-close" type="button" aria-label="Fechar">×</button>
+      </div>
+
+      <form id="collaborator-form">
+        <input id="collaborator-id" type="hidden" />
+        <div class="form-grid">
+          <div class="field-group form-span-2">
+            <label for="collaborator-name">Nome completo *</label>
+            <input id="collaborator-name" type="text" maxlength="140" required />
+          </div>
+          <div class="field-group">
+            <label for="collaborator-registration">Matrícula/cadastro</label>
+            <input id="collaborator-registration" type="text" maxlength="60" />
+          </div>
+          <div class="field-group">
+            <label for="collaborator-role">Cargo/função</label>
+            <input id="collaborator-role" type="text" maxlength="100" />
+          </div>
+          <div class="field-group">
+            <label for="collaborator-sector">Setor/contrato</label>
+            <input id="collaborator-sector" type="text" maxlength="120" />
+          </div>
+          <div class="field-group">
+            <label for="collaborator-admission">Data de admissão</label>
+            <input id="collaborator-admission" type="date" />
+          </div>
+          <div class="field-group">
+            <label for="collaborator-manager">Gestor responsável</label>
+            <input id="collaborator-manager" type="text" maxlength="140" />
+          </div>
+          <div class="field-group">
+            <label for="collaborator-status">Status</label>
+            <select id="collaborator-status">
+              <option value="true">Ativo</option>
+              <option value="false">Inativo</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="collaborator-form-message" class="message hidden" role="alert"></div>
+
+        <div class="modal-footer">
+          <button id="cancel-collaborator-modal" class="modal-secondary-button" type="button">Cancelar</button>
+          <button id="collaborator-save-button" class="modal-primary-button" type="submit">
+            <span class="button-label">Salvar colaborador</span>
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>

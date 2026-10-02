@@ -11,6 +11,13 @@ import {
   getFirestore,
   doc,
   getDoc,
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -27,6 +34,7 @@ const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
 
 const allowedRoles = new Set(["administrador", "master", "gestor", "colaborador"]);
+const managementRoles = new Set(["administrador", "master", "gestor"]);
 
 const ui = {
   loadingScreen: document.querySelector("#loading-screen"),
@@ -49,6 +57,7 @@ const ui = {
   navItems: [...document.querySelectorAll(".nav-item")],
   pageTitle: document.querySelector("#page-title"),
   dashboardPanel: document.querySelector("#dashboard-panel"),
+  collaboratorsPanel: document.querySelector("#collaborators-panel"),
   placeholderPanel: document.querySelector("#placeholder-panel"),
   placeholderTitle: document.querySelector("#placeholder-title"),
   backDashboard: document.querySelector("#back-dashboard"),
@@ -56,6 +65,29 @@ const ui = {
   menuToggle: document.querySelector("#menu-toggle"),
   sidebar: document.querySelector("#sidebar"),
   sidebarBackdrop: document.querySelector("#sidebar-backdrop"),
+  collaboratorCountMetric: document.querySelector("#collaborator-count-metric"),
+  collaboratorCountCaption: document.querySelector("#collaborator-count-caption"),
+  newCollaboratorButton: document.querySelector("#new-collaborator-button"),
+  collaboratorSearch: document.querySelector("#collaborator-search"),
+  collaboratorTableBody: document.querySelector("#collaborator-table-body"),
+  collaboratorEmpty: document.querySelector("#collaborator-empty"),
+  collaboratorSummary: document.querySelector("#collaborator-summary"),
+  collaboratorModal: document.querySelector("#collaborator-modal"),
+  collaboratorModalTitle: document.querySelector("#collaborator-modal-title"),
+  collaboratorForm: document.querySelector("#collaborator-form"),
+  collaboratorId: document.querySelector("#collaborator-id"),
+  collaboratorName: document.querySelector("#collaborator-name"),
+  collaboratorRegistration: document.querySelector("#collaborator-registration"),
+  collaboratorRole: document.querySelector("#collaborator-role"),
+  collaboratorSector: document.querySelector("#collaborator-sector"),
+  collaboratorAdmission: document.querySelector("#collaborator-admission"),
+  collaboratorManager: document.querySelector("#collaborator-manager"),
+  collaboratorStatus: document.querySelector("#collaborator-status"),
+  collaboratorFormMessage: document.querySelector("#collaborator-form-message"),
+  collaboratorSaveButton: document.querySelector("#collaborator-save-button"),
+  collaboratorSaveLabel: document.querySelector("#collaborator-save-button .button-label"),
+  closeCollaboratorModal: document.querySelector("#close-collaborator-modal"),
+  cancelCollaboratorModal: document.querySelector("#cancel-collaborator-modal"),
 };
 
 const moduleNames = {
@@ -74,6 +106,8 @@ const moduleNames = {
 
 let currentUserProfile = null;
 let toastTimer = null;
+let collaborators = [];
+let stopCollaboratorsListener = null;
 
 function normalizeRole(role) {
   return String(role || "").trim().toLowerCase();
@@ -96,6 +130,10 @@ function initials(name) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() || "")
     .join("") || "U";
+}
+
+function isManagement() {
+  return managementRoles.has(normalizeRole(currentUserProfile?.role));
 }
 
 function setLoginLoading(isLoading) {
@@ -141,11 +179,13 @@ function showApp(profile) {
   ui.userAvatar.textContent = initials(name);
   ui.welcomeName.textContent = `Olá, ${String(name).split(/\s+/)[0]}.`;
   ui.usersNavItem.classList.toggle("hidden", role !== "administrador");
+  ui.newCollaboratorButton.classList.toggle("hidden", !managementRoles.has(role));
 
   ui.loadingScreen.classList.add("hidden");
   ui.loginView.classList.add("hidden");
   ui.appView.classList.remove("hidden");
 
+  startCollaboratorsListener();
   navigateTo("dashboard");
 }
 
@@ -237,7 +277,6 @@ async function handleLogin(event) {
 
   try {
     await signInWithEmailAndPassword(auth, email, password);
-    // A abertura da interface é tratada por onAuthStateChanged.
   } catch (error) {
     setLoginLoading(false);
     showLoginMessage(authErrorMessage(error));
@@ -246,6 +285,9 @@ async function handleLogin(event) {
 
 async function handleLogout() {
   try {
+    stopCollaboratorsListener?.();
+    stopCollaboratorsListener = null;
+    collaborators = [];
     await signOut(auth);
   } catch (error) {
     console.error(error);
@@ -268,11 +310,16 @@ function navigateTo(moduleKey) {
   const title = moduleNames[moduleKey] || "Safety EPI";
   ui.pageTitle.textContent = title;
 
+  ui.dashboardPanel.classList.add("hidden");
+  ui.collaboratorsPanel.classList.add("hidden");
+  ui.placeholderPanel.classList.add("hidden");
+
   if (moduleKey === "dashboard") {
-    ui.placeholderPanel.classList.add("hidden");
     ui.dashboardPanel.classList.remove("hidden");
+  } else if (moduleKey === "colaboradores") {
+    ui.collaboratorsPanel.classList.remove("hidden");
+    renderCollaborators();
   } else {
-    ui.dashboardPanel.classList.add("hidden");
     ui.placeholderPanel.classList.remove("hidden");
     ui.placeholderTitle.textContent = title;
   }
@@ -297,19 +344,291 @@ function closeMobileMenu() {
   ui.sidebarBackdrop.classList.remove("visible");
 }
 
+function formatDate(dateValue) {
+  if (!dateValue) return "—";
+  const [year, month, day] = String(dateValue).split("-");
+  if (!year || !month || !day) return dateValue;
+  return `${day}/${month}/${year}`;
+}
+
+function collaboratorMatchesSearch(collaborator, search) {
+  if (!search) return true;
+  const haystack = [
+    collaborator.nomeCompleto,
+    collaborator.matricula,
+    collaborator.cargoFuncao,
+    collaborator.setorContrato,
+    collaborator.gestorResponsavel,
+  ].join(" ").toLowerCase();
+  return haystack.includes(search.toLowerCase());
+}
+
+function updateCollaboratorMetric() {
+  if (!isManagement()) {
+    ui.collaboratorCountMetric.textContent = collaborators.length ? "1" : "0";
+    ui.collaboratorCountCaption.textContent = collaborators.length ? "Seu cadastro" : "Cadastro não vinculado";
+    return;
+  }
+
+  const activeCount = collaborators.filter((item) => item.ativo !== false).length;
+  ui.collaboratorCountMetric.textContent = String(activeCount);
+  ui.collaboratorCountCaption.textContent = activeCount === 1 ? "1 colaborador ativo" : `${activeCount} colaboradores ativos`;
+}
+
+function startCollaboratorsListener() {
+  stopCollaboratorsListener?.();
+  stopCollaboratorsListener = null;
+
+  const role = normalizeRole(currentUserProfile?.role);
+
+  if (managementRoles.has(role)) {
+    const q = query(collection(db, "colaboradores"), orderBy("nomeCompleto"));
+    stopCollaboratorsListener = onSnapshot(q, (snapshot) => {
+      collaborators = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+      updateCollaboratorMetric();
+      renderCollaborators();
+    }, (error) => {
+      console.error("Falha ao carregar colaboradores:", error);
+      showToast("Não foi possível carregar os colaboradores. Verifique as regras do Firestore.");
+    });
+    return;
+  }
+
+  const collaboratorId = currentUserProfile?.colaboradorId;
+  if (!collaboratorId) {
+    collaborators = [];
+    updateCollaboratorMetric();
+    renderCollaborators();
+    return;
+  }
+
+  const ref = doc(db, "colaboradores", collaboratorId);
+  stopCollaboratorsListener = onSnapshot(ref, (snapshot) => {
+    collaborators = snapshot.exists() ? [{ id: snapshot.id, ...snapshot.data() }] : [];
+    updateCollaboratorMetric();
+    renderCollaborators();
+  }, (error) => {
+    console.error("Falha ao carregar cadastro do colaborador:", error);
+    showToast("Não foi possível carregar sua ficha de colaborador.");
+  });
+}
+
+function renderCollaborators() {
+  if (!ui.collaboratorTableBody) return;
+
+  const search = ui.collaboratorSearch.value.trim();
+  const visible = collaborators.filter((item) => collaboratorMatchesSearch(item, search));
+  const canManage = isManagement();
+
+  ui.collaboratorTableBody.innerHTML = "";
+  ui.collaboratorEmpty.classList.toggle("hidden", visible.length > 0);
+
+  if (!canManage && !currentUserProfile?.colaboradorId) {
+    ui.collaboratorEmpty.querySelector("strong").textContent = "Seu cadastro ainda não foi vinculado";
+    ui.collaboratorEmpty.querySelector("span").textContent = "Peça ao administrador para vincular sua conta ao seu registro de colaborador.";
+  } else if (visible.length === 0 && collaborators.length > 0) {
+    ui.collaboratorEmpty.querySelector("strong").textContent = "Nenhum resultado encontrado";
+    ui.collaboratorEmpty.querySelector("span").textContent = "Tente outro nome, matrícula, função, setor ou gestor.";
+  } else {
+    ui.collaboratorEmpty.querySelector("strong").textContent = "Nenhum colaborador cadastrado";
+    ui.collaboratorEmpty.querySelector("span").textContent = canManage
+      ? "Use o botão Novo colaborador para iniciar o cadastro."
+      : "Seu cadastro ainda não está disponível.";
+  }
+
+  visible.forEach((collaborator) => {
+    const row = document.createElement("tr");
+    const active = collaborator.ativo !== false;
+
+    const cells = [
+      collaborator.nomeCompleto || "—",
+      collaborator.matricula || "—",
+      collaborator.cargoFuncao || "—",
+      collaborator.setorContrato || "—",
+      formatDate(collaborator.dataAdmissao),
+      collaborator.gestorResponsavel || "—",
+    ];
+
+    cells.forEach((value, index) => {
+      const cell = document.createElement("td");
+      if (index === 0) {
+        const name = document.createElement("strong");
+        name.className = "table-primary";
+        name.textContent = value;
+        cell.appendChild(name);
+      } else {
+        cell.textContent = value;
+      }
+      row.appendChild(cell);
+    });
+
+    const statusCell = document.createElement("td");
+    const badge = document.createElement("span");
+    badge.className = `status-badge ${active ? "active" : "inactive"}`;
+    badge.textContent = active ? "Ativo" : "Inativo";
+    statusCell.appendChild(badge);
+    row.appendChild(statusCell);
+
+    const actionCell = document.createElement("td");
+    actionCell.className = "table-actions";
+    const actionButton = document.createElement("button");
+    actionButton.type = "button";
+    actionButton.className = "table-action-button";
+    actionButton.textContent = canManage ? "Editar" : "Ver";
+    actionButton.addEventListener("click", () => openCollaboratorModal(collaborator));
+    actionCell.appendChild(actionButton);
+    row.appendChild(actionCell);
+
+    ui.collaboratorTableBody.appendChild(row);
+  });
+
+  const total = collaborators.length;
+  const active = collaborators.filter((item) => item.ativo !== false).length;
+  const inactive = total - active;
+  ui.collaboratorSummary.textContent = canManage
+    ? `${total} cadastrado${total === 1 ? "" : "s"} • ${active} ativo${active === 1 ? "" : "s"} • ${inactive} inativo${inactive === 1 ? "" : "s"}`
+    : total ? "Seu cadastro de colaborador" : "Cadastro não vinculado";
+}
+
+function clearCollaboratorFormMessage() {
+  ui.collaboratorFormMessage.textContent = "";
+  ui.collaboratorFormMessage.className = "message hidden";
+}
+
+function showCollaboratorFormMessage(text, type = "error") {
+  ui.collaboratorFormMessage.textContent = text;
+  ui.collaboratorFormMessage.className = `message ${type}`;
+}
+
+function setCollaboratorFormDisabled(disabled) {
+  [...ui.collaboratorForm.elements].forEach((element) => {
+    element.disabled = disabled;
+  });
+  ui.closeCollaboratorModal.disabled = disabled;
+  ui.cancelCollaboratorModal.disabled = disabled;
+}
+
+function openCollaboratorModal(collaborator = null) {
+  clearCollaboratorFormMessage();
+  const canManage = isManagement();
+  const editing = Boolean(collaborator?.id);
+
+  ui.collaboratorId.value = collaborator?.id || "";
+  ui.collaboratorName.value = collaborator?.nomeCompleto || "";
+  ui.collaboratorRegistration.value = collaborator?.matricula || "";
+  ui.collaboratorRole.value = collaborator?.cargoFuncao || "";
+  ui.collaboratorSector.value = collaborator?.setorContrato || "";
+  ui.collaboratorAdmission.value = collaborator?.dataAdmissao || "";
+  ui.collaboratorManager.value = collaborator?.gestorResponsavel || "";
+  ui.collaboratorStatus.value = collaborator?.ativo === false ? "false" : "true";
+
+  ui.collaboratorModalTitle.textContent = editing ? (canManage ? "Editar colaborador" : "Dados do colaborador") : "Novo colaborador";
+  ui.collaboratorSaveButton.classList.toggle("hidden", !canManage);
+  ui.cancelCollaboratorModal.textContent = canManage ? "Cancelar" : "Fechar";
+
+  [...ui.collaboratorForm.elements].forEach((element) => {
+    if (element === ui.collaboratorId) return;
+    element.disabled = !canManage;
+  });
+
+  ui.collaboratorModal.classList.remove("hidden");
+  document.body.classList.add("modal-open");
+  if (canManage) setTimeout(() => ui.collaboratorName.focus(), 40);
+}
+
+function closeCollaboratorDialog() {
+  ui.collaboratorModal.classList.add("hidden");
+  document.body.classList.remove("modal-open");
+  ui.collaboratorForm.reset();
+  ui.collaboratorId.value = "";
+  ui.collaboratorStatus.value = "true";
+  clearCollaboratorFormMessage();
+}
+
+async function handleCollaboratorSubmit(event) {
+  event.preventDefault();
+  clearCollaboratorFormMessage();
+
+  if (!isManagement()) {
+    showCollaboratorFormMessage("Seu perfil não possui permissão para alterar este cadastro.");
+    return;
+  }
+
+  const nomeCompleto = ui.collaboratorName.value.trim();
+  if (!nomeCompleto) {
+    showCollaboratorFormMessage("Informe o nome completo do colaborador.");
+    ui.collaboratorName.focus();
+    return;
+  }
+
+  const payload = {
+    nomeCompleto,
+    matricula: ui.collaboratorRegistration.value.trim(),
+    cargoFuncao: ui.collaboratorRole.value.trim(),
+    setorContrato: ui.collaboratorSector.value.trim(),
+    dataAdmissao: ui.collaboratorAdmission.value,
+    gestorResponsavel: ui.collaboratorManager.value.trim(),
+    ativo: ui.collaboratorStatus.value === "true",
+    atualizadoEm: serverTimestamp(),
+    atualizadoPor: auth.currentUser.uid,
+  };
+
+  const collaboratorId = ui.collaboratorId.value;
+  setCollaboratorFormDisabled(true);
+  ui.collaboratorSaveButton.classList.remove("hidden");
+  ui.collaboratorSaveLabel.textContent = collaboratorId ? "Salvando..." : "Cadastrando...";
+
+  try {
+    if (collaboratorId) {
+      await updateDoc(doc(db, "colaboradores", collaboratorId), payload);
+      showToast("Cadastro do colaborador atualizado.");
+    } else {
+      await addDoc(collection(db, "colaboradores"), {
+        ...payload,
+        criadoEm: serverTimestamp(),
+        criadoPor: auth.currentUser.uid,
+      });
+      showToast("Colaborador cadastrado com sucesso.");
+    }
+    closeCollaboratorDialog();
+  } catch (error) {
+    console.error("Falha ao salvar colaborador:", error);
+    showCollaboratorFormMessage(
+      error?.code === "permission-denied"
+        ? "O Firestore recusou a gravação. Publique as novas regras de segurança antes de testar."
+        : "Não foi possível salvar o colaborador. Tente novamente."
+    );
+  } finally {
+    setCollaboratorFormDisabled(false);
+    ui.collaboratorSaveLabel.textContent = "Salvar colaborador";
+  }
+}
+
 ui.loginForm.addEventListener("submit", handleLogin);
 ui.logoutButton.addEventListener("click", handleLogout);
 ui.togglePassword.addEventListener("click", togglePasswordVisibility);
 ui.menuToggle.addEventListener("click", openMobileMenu);
 ui.sidebarBackdrop.addEventListener("click", closeMobileMenu);
 ui.backDashboard.addEventListener("click", () => navigateTo("dashboard"));
+ui.newCollaboratorButton.addEventListener("click", () => openCollaboratorModal());
+ui.collaboratorSearch.addEventListener("input", renderCollaborators);
+ui.collaboratorForm.addEventListener("submit", handleCollaboratorSubmit);
+ui.closeCollaboratorModal.addEventListener("click", closeCollaboratorDialog);
+ui.cancelCollaboratorModal.addEventListener("click", closeCollaboratorDialog);
+
+ui.collaboratorModal.addEventListener("click", (event) => {
+  if (event.target === ui.collaboratorModal) closeCollaboratorDialog();
+});
 
 ui.navItems.forEach((item) => {
   item.addEventListener("click", () => navigateTo(item.dataset.module));
 });
 
 window.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") closeMobileMenu();
+  if (event.key === "Escape") {
+    closeMobileMenu();
+    if (!ui.collaboratorModal.classList.contains("hidden")) closeCollaboratorDialog();
+  }
 });
 
 try {
@@ -320,6 +639,9 @@ try {
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
+    stopCollaboratorsListener?.();
+    stopCollaboratorsListener = null;
+    collaborators = [];
     currentUserProfile = null;
     showLogin();
     return;

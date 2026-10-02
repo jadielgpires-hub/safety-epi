@@ -1,53 +1,28 @@
-SAFETY EPI — V1 BASE INICIAL
-============================
+SAFETY EPI — V1 EM CONSTRUÇÃO
 
-Conteúdo desta primeira versão:
-- Tela de login Safety Equipamentos.
-- Firebase Authentication (e-mail/senha).
-- Consulta do perfil em usuarios/{UID} no Cloud Firestore.
-- Validação de usuário ativo.
-- Perfis reconhecidos: administrador, master, gestor e colaborador.
-- Aba Usuários visível somente para administrador.
-- Dashboard inicial.
-- Logout.
-- Menu responsivo para futura utilização no celular.
-- Módulos futuros já representados no menu, ainda sem funcionalidade.
+Versão atual: módulo Colaboradores
 
-ARQUIVOS
---------
-index.html       Interface do sistema.
-style.css        Aparência e responsividade.
-app.js           Firebase, login, sessão, perfil e navegação inicial.
-firestore.rules  Cópia das regras iniciais publicadas no Firestore.
-assets/          Identidade visual.
+Incluído nesta etapa:
+- Login Firebase por e-mail e senha
+- Sessão persistente e logout
+- Validação de usuário ativo e perfil
+- Dashboard inicial
+- Cadastro de colaboradores
+- Pesquisa de colaboradores
+- Edição e ativação/inativação de colaboradores
+- Permissões preparadas para Administrador, Master, Gestor e Colaborador
+- Colaborador comum verá apenas o próprio cadastro quando houver colaboradorId vinculado em usuarios/{uid}
 
-COMO TESTAR NO COMPUTADOR
--------------------------
-1. Extraia a pasta SAFETY-EPI.
-2. Não teste abrindo index.html diretamente com file://.
-3. Sirva a pasta em http://localhost.
+IMPORTANTE — FIRESTORE RULES
+Antes de testar o módulo Colaboradores, substitua as regras publicadas no Firebase pelo conteúdo do arquivo firestore.rules e clique em Publicar.
 
-Opção simples se o Python estiver instalado:
-- Abra o Prompt de Comando dentro da pasta SAFETY-EPI.
-- Execute: python -m http.server 5500
-- Abra no navegador: http://localhost:5500
+Campos atuais do colaborador, alinhados à ficha SE-FRM-SST-004:
+- Nome completo
+- Matrícula/cadastro
+- Cargo/função
+- Setor/contrato
+- Data de admissão
+- Gestor responsável
+- Status ativo/inativo
 
-Outra opção é usar a extensão Live Server do Visual Studio Code.
-
-LOGIN
------
-Use o mesmo e-mail e senha cadastrados em Firebase Authentication.
-O documento usuarios/{UID} correspondente precisa conter:
-- ativo: true
-- role: administrador
-- nome
-- email
-
-OBSERVAÇÃO DE SEGURANÇA
------------------------
-O firebaseConfig de aplicações Web é público por natureza. O controle de acesso
-é feito pelo Firebase Authentication e pelas regras do Firestore.
-
-PRÓXIMA ETAPA PREVISTA
-----------------------
-Cadastro de Colaboradores + vínculo opcional entre usuario e colaborador.
+Nenhum cadastro de colaborador é excluído nesta versão. O controle é feito por status ativo/inativo para preservar histórico futuro.
