@@ -1,88 +1,127 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function logged() { return request.auth != null; }
-    function profileExists() { return logged() && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)); }
-    function profile() { return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)); }
-    function active() { return profileExists() && profile().data.ativo == true; }
-    function role() { return active() ? profile().data.role : null; }
-    function admin() { return role() == "administrador"; }
-    function master() { return role() == "master"; }
-    function management() { return role() in ["administrador", "master", "gestor"]; }
-    function collabId() { return active() ? profile().data.get("colaboradorId", "") : ""; }
-    function ownCollaborator(id) { return active() && collabId() == id; }
-    function ownMovement() { return active() && resource.data.colaboradorId == collabId(); }
-    function ownReservedItem() { return active() && resource.data.get("responsavelColaboradorId", "") == collabId(); }
-    function ownItemStatusTransition() {
-      return ownReservedItem()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status","responsavelColaboradorId","responsavelNome","atualizadoEm"])
-        && request.resource.data.status in ["Em uso","Aguardando inspeção","Disponível"];
+    function signedIn() {
+      return request.auth != null;
+    }
+    function hasProfile() {
+      return signedIn() && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid));
+    }
+    function me() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+    function active() {
+      return hasProfile() && me().ativo == true;
+    }
+    function isAdmin() {
+      return active() && me().role == 'administrador';
+    }
+    function isManager() {
+      return active() && me().role in ['administrador', 'master', 'gestor'];
+    }
+    function myCollaboratorId() {
+      return active() && ('colaboradorId' in me()) ? me().colaboradorId : '';
+    }
+    function isMyCollaborator(id) {
+      return active() && myCollaboratorId() == id;
+    }
+    function isMyMovement() {
+      return active() && resource.data.colaboradorId == myCollaboratorId();
+    }
+    function isMyReservedResource() {
+      return active()
+        && ('responsavelColaboradorId' in resource.data)
+        && resource.data.responsavelColaboradorId == myCollaboratorId();
+    }
+    function collaboratorResourceTransition() {
+      return isMyReservedResource()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status','responsavelColaboradorId','responsavelNome','atualizadoEm','atualizadoPor'
+        ])
+        && request.resource.data.status in ['Em uso','Aguardando inspeção','Disponível'];
     }
 
     match /usuarios/{userId} {
-      allow read: if active() && (request.auth.uid == userId || admin() || master());
-      allow create: if admin();
+      // Todo usuário precisa ler o próprio perfil para entrar. Só Administrador gerencia usuários.
+      allow read: if active() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAdmin();
+      allow update: if isAdmin();
       allow delete: if false;
-      allow update: if admin() || (master() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["colaboradorId","ativo","atualizadoEm","atualizadoPor"]));
     }
+
     match /colaboradores/{id} {
-      allow read: if management() || ownCollaborator(id);
-      allow create, update: if management();
+      allow read: if isManager() || isMyCollaborator(id);
+      allow create, update: if isManager();
       allow delete: if false;
     }
+
     match /obras/{id} {
-      allow read: if active();
-      allow create, update: if management();
+      allow read: if isManager();
+      allow create, update: if isManager();
       allow delete: if false;
     }
+
     match /epis/{id} {
-      allow read: if active();
-      allow create, update: if management();
+      allow read: if isManager();
+      allow create, update: if isManager();
       allow delete: if false;
     }
+
     match /equipamentos/{id} {
-      allow read: if active();
-      allow create: if management();
-      allow update: if management() || ownItemStatusTransition();
+      allow read: if isManager() || (active() && resource.data.responsavelColaboradorId == myCollaboratorId());
+      allow create: if isManager();
+      allow update: if isManager() || collaboratorResourceTransition();
       allow delete: if false;
     }
+
     match /kits/{id} {
-      allow read: if active();
-      allow create: if management();
-      allow update: if management() || ownItemStatusTransition();
+      allow read: if isManager() || (active() && resource.data.responsavelColaboradorId == myCollaboratorId());
+      allow create: if isManager();
+      allow update: if isManager() || collaboratorResourceTransition();
       allow delete: if false;
     }
+
     match /estoque_movimentacoes/{id} {
-      allow read, create: if management();
+      allow read, create: if isManager();
       allow update, delete: if false;
     }
+
     match /inspecoes/{id} {
-      allow read: if active();
-      allow create, update: if management();
+      allow read, create, update: if isManager();
       allow delete: if false;
     }
+
     match /mobilizacoes/{id} {
-      allow read: if management() || (active() && resource.data.colaboradorId == collabId());
-      allow create, update: if management();
+      allow read, create, update: if isManager();
       allow delete: if false;
     }
+
     match /movimentacoes/{id} {
-      allow read: if management() || ownMovement();
-      allow create: if management();
+      allow read: if isManager() || isMyMovement();
+      allow create: if isManager();
       allow delete: if false;
-      allow update: if management()
-        || (ownMovement() && resource.data.statusAssinatura == "pendente"
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["statusAssinatura","assinaturaBase64","assinadoEm","assinadoPor","assinadoPorNome","estado"])
-          && request.resource.data.statusAssinatura == "assinado")
-        || (ownMovement() && resource.data.statusAssinatura == "assinado" && resource.data.estado == "em_posse"
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["estado","devolvidoEm"])
-          && request.resource.data.estado == "devolvido");
+      allow update: if isManager()
+        || (isMyMovement()
+          && resource.data.statusAssinatura == 'pendente'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'statusAssinatura','assinaturaBase64','assinadoEm','assinadoPor','assinadoPorNome','estado'
+          ])
+          && request.resource.data.statusAssinatura == 'assinado')
+        || (isMyMovement()
+          && resource.data.statusAssinatura == 'assinado'
+          && resource.data.estado == 'em_posse'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado','devolvidoEm'])
+          && request.resource.data.estado == 'devolvido');
     }
+
     match /auditoria/{id} {
-      allow read: if management();
+      allow read: if isManager();
       allow create: if active();
       allow update, delete: if false;
     }
-    match /{document=**} { allow read, write: if false; }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
 }
