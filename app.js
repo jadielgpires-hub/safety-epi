@@ -1,865 +1,177 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import {
-  getAuth,
-  onAuthStateChanged,
-  setPersistence,
-  browserLocalPersistence,
-  signInWithEmailAndPassword,
-  signOut,
+  getAuth,onAuthStateChanged,setPersistence,browserLocalPersistence,
+  signInWithEmailAndPassword,signOut
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {
-  getFirestore,
-  doc,
-  getDoc,
-  collection,
-  query,
-  orderBy,
-  onSnapshot,
-  addDoc,
-  updateDoc,
-  serverTimestamp,
+  getFirestore,doc,getDoc,setDoc,addDoc,updateDoc,collection,query,where,onSnapshot,
+  getDocs,serverTimestamp,writeBatch
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDxHYAPM-1LthEfb-FA1_gTEv1A8uL5l3U",
-  authDomain: "safety-epi.firebaseapp.com",
-  projectId: "safety-epi",
-  storageBucket: "safety-epi.firebasestorage.app",
-  messagingSenderId: "450999995915",
-  appId: "1:450999995915:web:5ef379ac2785e17a41410e",
+const firebaseConfig={
+  apiKey:"AIzaSyDxHYAPM-1LthEfb-FA1_gTEv1A8uL5l3U",
+  authDomain:"safety-epi.firebaseapp.com",
+  projectId:"safety-epi",
+  storageBucket:"safety-epi.firebasestorage.app",
+  messagingSenderId:"450999995915",
+  appId:"1:450999995915:web:5ef379ac2785e17a41410e"
 };
 
-const firebaseApp = initializeApp(firebaseConfig);
-const auth = getAuth(firebaseApp);
-const db = getFirestore(firebaseApp);
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getFirestore(app);
 
-const allowedRoles = new Set(["administrador", "master", "gestor", "colaborador"]);
-const managementRoles = new Set(["administrador", "master", "gestor"]);
-
-const ui = {
-  loadingScreen: document.querySelector("#loading-screen"),
-  loginView: document.querySelector("#login-view"),
-  appView: document.querySelector("#app-view"),
-  loginForm: document.querySelector("#login-form"),
-  email: document.querySelector("#email"),
-  password: document.querySelector("#password"),
-  togglePassword: document.querySelector("#toggle-password"),
-  loginButton: document.querySelector("#login-button"),
-  loginButtonLabel: document.querySelector("#login-button .button-label"),
-  loginButtonSpinner: document.querySelector("#login-button .button-spinner"),
-  loginMessage: document.querySelector("#login-message"),
-  logoutButton: document.querySelector("#logout-button"),
-  userName: document.querySelector("#user-name"),
-  userRole: document.querySelector("#user-role"),
-  userAvatar: document.querySelector("#user-avatar"),
-  welcomeName: document.querySelector("#welcome-name"),
-  usersNavItem: document.querySelector("#users-nav-item"),
-  navItems: [...document.querySelectorAll(".nav-item")],
-  pageTitle: document.querySelector("#page-title"),
-  dashboardPanel: document.querySelector("#dashboard-panel"),
-  collaboratorsPanel: document.querySelector("#collaborators-panel"),
-  usersPanel: document.querySelector("#users-panel"),
-  placeholderPanel: document.querySelector("#placeholder-panel"),
-  placeholderTitle: document.querySelector("#placeholder-title"),
-  backDashboard: document.querySelector("#back-dashboard"),
-  toast: document.querySelector("#toast"),
-  menuToggle: document.querySelector("#menu-toggle"),
-  sidebar: document.querySelector("#sidebar"),
-  sidebarBackdrop: document.querySelector("#sidebar-backdrop"),
-  collaboratorCountMetric: document.querySelector("#collaborator-count-metric"),
-  collaboratorCountCaption: document.querySelector("#collaborator-count-caption"),
-  newCollaboratorButton: document.querySelector("#new-collaborator-button"),
-  collaboratorSearch: document.querySelector("#collaborator-search"),
-  collaboratorTableBody: document.querySelector("#collaborator-table-body"),
-  collaboratorEmpty: document.querySelector("#collaborator-empty"),
-  collaboratorSummary: document.querySelector("#collaborator-summary"),
-  usersSearch: document.querySelector("#users-search"),
-  usersTableBody: document.querySelector("#users-table-body"),
-  usersEmpty: document.querySelector("#users-empty"),
-  usersSummary: document.querySelector("#users-summary"),
-  userLinkModal: document.querySelector("#user-link-modal"),
-  userLinkModalTitle: document.querySelector("#user-link-modal-title"),
-  userLinkForm: document.querySelector("#user-link-form"),
-  userLinkId: document.querySelector("#user-link-id"),
-  userLinkName: document.querySelector("#user-link-name"),
-  userLinkEmail: document.querySelector("#user-link-email"),
-  userLinkRole: document.querySelector("#user-link-role"),
-  userLinkCollaborator: document.querySelector("#user-link-collaborator"),
-  userLinkMessage: document.querySelector("#user-link-message"),
-  closeUserLinkModal: document.querySelector("#close-user-link-modal"),
-  cancelUserLinkModal: document.querySelector("#cancel-user-link-modal"),
-  userLinkSaveButton: document.querySelector("#user-link-save-button"),
-  collaboratorModal: document.querySelector("#collaborator-modal"),
-  collaboratorModalTitle: document.querySelector("#collaborator-modal-title"),
-  collaboratorForm: document.querySelector("#collaborator-form"),
-  collaboratorId: document.querySelector("#collaborator-id"),
-  collaboratorName: document.querySelector("#collaborator-name"),
-  collaboratorRegistration: document.querySelector("#collaborator-registration"),
-  collaboratorRole: document.querySelector("#collaborator-role"),
-  collaboratorSector: document.querySelector("#collaborator-sector"),
-  collaboratorAdmission: document.querySelector("#collaborator-admission"),
-  collaboratorManager: document.querySelector("#collaborator-manager"),
-  collaboratorStatus: document.querySelector("#collaborator-status"),
-  collaboratorFormMessage: document.querySelector("#collaborator-form-message"),
-  collaboratorSaveButton: document.querySelector("#collaborator-save-button"),
-  collaboratorSaveLabel: document.querySelector("#collaborator-save-button .button-label"),
-  closeCollaboratorModal: document.querySelector("#close-collaborator-modal"),
-  cancelCollaboratorModal: document.querySelector("#cancel-collaborator-modal"),
+const ROLES=["administrador","master","gestor","colaborador"];
+const MANAGEMENT=new Set(["administrador","master","gestor"]);
+const ALL_COLLECTIONS=["colaboradores","obras","epis","equipamentos","kits","estoque_movimentacoes","movimentacoes","inspecoes","mobilizacoes","auditoria"];
+const state={
+  profile:null,user:null,module:"dashboard",
+  data:{colaboradores:[],obras:[],epis:[],equipamentos:[],kits:[],estoque_movimentacoes:[],movimentacoes:[],inspecoes:[],mobilizacoes:[],auditoria:[],usuarios:[]},
+  unsubs:[],pendingDeepLink:null
 };
 
-const moduleNames = {
-  dashboard: "Dashboard",
-  colaboradores: "Colaboradores",
-  obras: "Obras",
-  epis: "EPIs",
-  equipamentos: "Equipamentos",
-  kits: "KITs",
-  estoque: "Estoque",
-  inspecoes: "Inspeções",
-  movimentacoes: "Movimentações",
-  relatorios: "Relatórios",
-  usuarios: "Usuários",
+const $=s=>document.querySelector(s);
+const ui={
+  loading:$("#loading-screen"),loginView:$("#login-view"),appView:$("#app-view"),loginForm:$("#login-form"),
+  email:$("#email"),password:$("#password"),togglePassword:$("#toggle-password"),loginMessage:$("#login-message"),
+  loginButton:$("#login-button"),logout:$("#logout-button"),nav:$("#sidebar-nav"),pageTitle:$("#page-title"),root:$("#module-root"),
+  userName:$("#user-name"),userRole:$("#user-role"),userAvatar:$("#user-avatar"),menuToggle:$("#menu-toggle"),sidebar:$("#sidebar"),
+  backdrop:$("#sidebar-backdrop"),modalHost:$("#modal-host"),toast:$("#toast")
 };
 
-let currentUserProfile = null;
-let toastTimer = null;
-let collaborators = [];
-let stopCollaboratorsListener = null;
-let users = [];
-let stopUsersListener = null;
+const MENU=[
+  ["dashboard","⌂","Dashboard"],["colaboradores","◉","Colaboradores"],["obras","▦","Obras"],["epis","◆","EPIs"],
+  ["equipamentos","◈","Equipamentos"],["kits","▣","KITs"],["estoque","▤","Estoque"],["inspecoes","✓","Inspeções"],
+  ["movimentacoes","⇄","Movimentações"],["relatorios","▥","Relatórios"],["auditoria","≡","Auditoria"],["usuarios","⚙","Usuários"]
+];
+const TITLES=Object.fromEntries(MENU.map(([k,,v])=>[k,v]));
 
-function normalizeRole(role) {
-  return String(role || "").trim().toLowerCase();
+function esc(v){return String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));}
+function norm(v){return String(v??"").trim().toLowerCase();}
+function roleLabel(v){return ({administrador:"Administrador",master:"Master",gestor:"Gestor",colaborador:"Colaborador"})[norm(v)]||"Perfil";}
+function initials(name){return String(name||"U").trim().split(/\s+/).slice(0,2).map(p=>p[0]?.toUpperCase()||"").join("")||"U";}
+function isMgmt(){return MANAGEMENT.has(norm(state.profile?.role));}
+function isAdmin(){return norm(state.profile?.role)==="administrador";}
+function isMaster(){return norm(state.profile?.role)==="master";}
+function ownCollabId(){return state.profile?.colaboradorId||"";}
+function nowBR(){return new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(new Date());}
+function dateBR(v){if(!v)return "—";if(typeof v==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(v)){const [y,m,d]=v.split("-");return `${d}/${m}/${y}`;}const d=v?.toDate?v.toDate():new Date(v);return isNaN(d)?String(v):new Intl.DateTimeFormat("pt-BR").format(d);}
+function dateTimeBR(v){if(!v)return "—"; const d=v?.toDate?v.toDate():new Date(v); return isNaN(d)?String(v):new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(d);}
+function money(v){return new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(v||0));}
+function byName(a,b,field="nome"){return String(a[field]||"").localeCompare(String(b[field]||""),"pt-BR");}
+function findBy(col,id){return state.data[col]?.find(x=>x.id===id);}
+function showToast(msg){ui.toast.textContent=msg;ui.toast.classList.remove("hidden");clearTimeout(showToast.t);showToast.t=setTimeout(()=>ui.toast.classList.add("hidden"),3200);}
+function msgBox(msg,type="error"){return `<div class="message ${type}">${esc(msg)}</div>`;}
+function badge(text,type="info"){return `<span class="status-badge ${type}">${esc(text)}</span>`;}
+function statusType(text){const s=norm(text);if(["ativo","disponível","disponivel","aprovado","assinado","confirmada","concluída","concluida","em andamento"].some(x=>s.includes(x)))return"active";if(["quarentena","pendente","reservado","aguardando"].some(x=>s.includes(x)))return"warn";if(["inativo","descartado","reprovado","cancelado","retirado"].some(x=>s.includes(x)))return"danger";return"info";}
+function modal(title,body,{wide=false,narrow=false,footer=""}={}){ui.modalHost.innerHTML=`<div class="modal-backdrop" data-close-modal><section class="modal-card ${wide?"wide":""} ${narrow?"narrow":""}"><header class="modal-header"><div><span class="eyebrow">SAFETY EPI</span><h3>${esc(title)}</h3></div><button class="modal-close" type="button" data-close-modal>✕</button></header><div class="modal-body">${body}</div>${footer?`<footer class="modal-footer">${footer}</footer>`:""}</section></div>`;document.body.style.overflow="hidden";}
+function closeModal(){ui.modalHost.innerHTML="";document.body.style.overflow="";}
+function field(label,name,value="",opts={}){const {type="text",required=false,full=false,placeholder="",help="",min="",step="",disabled=false}=opts;return `<div class="form-field ${full?"full":""}"><label for="${name}">${esc(label)}${required?" *":""}</label><input id="${name}" name="${name}" type="${type}" value="${esc(value)}" placeholder="${esc(placeholder)}" ${required?"required":""} ${min!==""?`min="${esc(min)}"`:""} ${step!==""?`step="${esc(step)}"`:""} ${disabled?"disabled":""}>${help?`<div class="form-help">${esc(help)}</div>`:""}</div>`;}
+function selectField(label,name,options,value="",opts={}){const {required=false,full=false,disabled=false}=opts;return `<div class="form-field ${full?"full":""}"><label for="${name}">${esc(label)}${required?" *":""}</label><select id="${name}" name="${name}" ${required?"required":""} ${disabled?"disabled":""}>${options.map(o=>{const [v,l]=Array.isArray(o)?o:[o,o];return `<option value="${esc(v)}" ${String(v)===String(value)?"selected":""}>${esc(l)}</option>`}).join("")}</select></div>`;}
+function textArea(label,name,value="",opts={}){return `<div class="form-field ${opts.full!==false?"full":""}"><label for="${name}">${esc(label)}</label><textarea id="${name}" name="${name}">${esc(value)}</textarea></div>`;}
+function formDataObj(form){return Object.fromEntries(new FormData(form).entries());}
+function moduleHeader(kicker,title,desc,action=""){return `<div class="module-header"><div><span class="eyebrow">${esc(kicker)}</span><h2>${esc(title)}</h2><p>${esc(desc)}</p></div>${action}</div>`;}
+function audit(evento,entidade,entidadeId,detalhes=""){if(!state.user)return Promise.resolve();return addDoc(collection(db,"auditoria"),{evento,entidade,entidadeId:entidadeId||"",detalhes,usuarioId:state.user.uid,usuarioNome:state.profile?.nome||state.user.email||"",criadoEm:serverTimestamp()}).catch(e=>console.warn("Auditoria:",e));}
+
+function showLogin(){ui.loading.classList.add("hidden");ui.appView.classList.add("hidden");ui.loginView.classList.remove("hidden");}
+function showApp(){ui.loading.classList.add("hidden");ui.loginView.classList.add("hidden");ui.appView.classList.remove("hidden");const n=state.profile?.nome||state.user?.email||"Usuário";ui.userName.textContent=n;ui.userRole.textContent=roleLabel(state.profile?.role);ui.userAvatar.textContent=initials(n);renderNav();navigate("dashboard");}
+function allowedMenu(key){const r=norm(state.profile?.role);if(r==="colaborador")return ["dashboard","colaboradores","movimentacoes","relatorios"].includes(key);if(key==="usuarios")return r==="administrador"||r==="master";if(key==="auditoria")return MANAGEMENT.has(r);return true;}
+function pendingOwnCount(){return state.data.movimentacoes.filter(m=>m.colaboradorId===ownCollabId()&&m.statusAssinatura==="pendente").length;}
+function renderNav(){ui.nav.innerHTML=MENU.filter(([k])=>allowedMenu(k)).map(([k,i,l])=>`<button class="nav-item ${state.module===k?"active":""}" data-nav="${k}" type="button"><span class="nav-icon">${i}</span><span>${l}</span>${k==="movimentacoes"&&pendingOwnCount()?`<span class="nav-badge">${pendingOwnCount()}</span>`:""}</button>`).join("");}
+function navigate(key){if(!allowedMenu(key))key="dashboard";state.module=key;ui.pageTitle.textContent=TITLES[key]||"Safety EPI";renderNav();renderCurrent();ui.sidebar.classList.remove("open");ui.backdrop.classList.add("hidden");}
+function renderCurrent(){const map={dashboard:renderDashboard,colaboradores:renderCollaborators,obras:renderWorks,epis:renderEpis,equipamentos:renderEquipment,kits:renderKits,estoque:renderStock,inspecoes:renderInspections,movimentacoes:renderMovements,relatorios:renderReports,auditoria:renderAudit,usuarios:renderUsers};(map[state.module]||renderDashboard)();}
+
+function stopData(){state.unsubs.forEach(f=>{try{f()}catch{}});state.unsubs=[];Object.keys(state.data).forEach(k=>state.data[k]=[]);}
+function listenCol(name,qry=collection(db,name)){const unsub=onSnapshot(qry,snap=>{state.data[name]=snap.docs.map(d=>({id:d.id,...d.data()}));if(state.module)renderCurrent();renderNav();},err=>console.error(`Listener ${name}`,err));state.unsubs.push(unsub);}
+function startData(){stopData();const r=norm(state.profile?.role);if(r==="colaborador"){
+  if(ownCollabId()) state.unsubs.push(onSnapshot(doc(db,"colaboradores",ownCollabId()),s=>{state.data.colaboradores=s.exists()?[{id:s.id,...s.data()}]:[];renderCurrent();}));
+  listenCol("obras");listenCol("epis");listenCol("equipamentos");listenCol("kits");listenCol("inspecoes");listenCol("movimentacoes",query(collection(db,"movimentacoes"),where("colaboradorId","==",ownCollabId()||"__none__")));
+ } else {ALL_COLLECTIONS.forEach(c=>listenCol(c));}
+ if(r==="administrador"||r==="master")listenCol("usuarios");
 }
 
-function roleLabel(role) {
-  const labels = {
-    administrador: "Administrador",
-    master: "Master",
-    gestor: "Gestor",
-    colaborador: "Colaborador",
-  };
-  return labels[role] || "Perfil não definido";
-}
-
-function initials(name) {
-  return String(name || "Usuário")
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() || "")
-    .join("") || "U";
-}
-
-function isManagement() {
-  return managementRoles.has(normalizeRole(currentUserProfile?.role));
-}
-
-function setLoginLoading(isLoading) {
-  ui.loginButton.disabled = isLoading;
-  ui.email.disabled = isLoading;
-  ui.password.disabled = isLoading;
-  ui.loginButtonLabel.textContent = isLoading ? "Entrando..." : "Entrar";
-  ui.loginButtonSpinner.classList.toggle("hidden", !isLoading);
-}
-
-function showLoginMessage(text, type = "error") {
-  ui.loginMessage.textContent = text;
-  ui.loginMessage.className = `message ${type}`;
-}
-
-function clearLoginMessage() {
-  ui.loginMessage.textContent = "";
-  ui.loginMessage.className = "message hidden";
-}
-
-function showToast(text) {
-  clearTimeout(toastTimer);
-  ui.toast.textContent = text;
-  ui.toast.classList.remove("hidden");
-  toastTimer = setTimeout(() => ui.toast.classList.add("hidden"), 3300);
-}
-
-function showLogin() {
-  ui.loadingScreen.classList.add("hidden");
-  ui.appView.classList.add("hidden");
-  ui.loginView.classList.remove("hidden");
-  setLoginLoading(false);
-}
-
-function showApp(profile) {
-  currentUserProfile = profile;
-
-  const role = normalizeRole(profile.role);
-  const name = profile.nome || auth.currentUser?.email || "Usuário";
-
-  ui.userName.textContent = name;
-  ui.userRole.textContent = roleLabel(role);
-  ui.userAvatar.textContent = initials(name);
-  ui.welcomeName.textContent = `Olá, ${String(name).split(/\s+/)[0]}.`;
-  ui.usersNavItem.classList.toggle("hidden", role !== "administrador");
-  ui.newCollaboratorButton.classList.toggle("hidden", !managementRoles.has(role));
-
-  ui.loadingScreen.classList.add("hidden");
-  ui.loginView.classList.add("hidden");
-  ui.appView.classList.remove("hidden");
-
-  startCollaboratorsListener();
-  if (role === "administrador") startUsersListener();
-  navigateTo("dashboard");
-}
-
-async function loadUserProfile(user) {
-  const ref = doc(db, "usuarios", user.uid);
-  const snapshot = await getDoc(ref);
-
-  if (!snapshot.exists()) {
-    throw new Error("PROFILE_NOT_FOUND");
-  }
-
-  const data = snapshot.data();
-  const role = normalizeRole(data.role);
-
-  if (data.ativo !== true) {
-    throw new Error("USER_INACTIVE");
-  }
-
-  if (!allowedRoles.has(role)) {
-    throw new Error("INVALID_ROLE");
-  }
-
-  return {
-    id: snapshot.id,
-    ...data,
-    role,
-  };
-}
-
-function authErrorMessage(error) {
-  const code = error?.code || "";
-  const message = error?.message || "";
-
-  if (message.includes("PROFILE_NOT_FOUND")) {
-    return "Sua conta existe no login, mas não possui cadastro de acesso no sistema. Procure o administrador.";
-  }
-
-  if (message.includes("USER_INACTIVE")) {
-    return "Seu acesso está inativo. Procure o administrador do sistema.";
-  }
-
-  if (message.includes("INVALID_ROLE")) {
-    return "Seu perfil de acesso não está configurado corretamente.";
-  }
-
-  const map = {
-    "auth/invalid-credential": "E-mail ou senha inválidos.",
-    "auth/invalid-email": "Digite um endereço de e-mail válido.",
-    "auth/missing-password": "Digite sua senha.",
-    "auth/too-many-requests": "Muitas tentativas de acesso. Aguarde alguns minutos e tente novamente.",
-    "auth/network-request-failed": "Não foi possível conectar ao Firebase. Verifique sua internet e tente novamente.",
-    "auth/user-disabled": "Esta conta foi desativada no Firebase Authentication.",
-  };
-
-  if (map[code]) return map[code];
-
-  if (code === "permission-denied" || message.includes("Missing or insufficient permissions")) {
-    return "O Firestore recusou o acesso. Verifique as regras de segurança publicadas.";
-  }
-
-  console.error("Falha de autenticação:", error);
-  return "Não foi possível concluir o acesso. Tente novamente.";
-}
-
-async function handleAuthenticatedUser(user) {
-  try {
-    const profile = await loadUserProfile(user);
-    showApp(profile);
-  } catch (error) {
-    await signOut(auth);
-    showLogin();
-    showLoginMessage(authErrorMessage(error));
-  }
-}
-
-async function handleLogin(event) {
-  event.preventDefault();
-  clearLoginMessage();
-
-  const email = ui.email.value.trim();
-  const password = ui.password.value;
-
-  if (!email || !password) {
-    showLoginMessage("Preencha o e-mail e a senha.");
-    return;
-  }
-
-  setLoginLoading(true);
-
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-  } catch (error) {
-    setLoginLoading(false);
-    showLoginMessage(authErrorMessage(error));
-  }
-}
-
-async function handleLogout() {
-  try {
-    stopCollaboratorsListener?.();
-    stopCollaboratorsListener = null;
-    stopUsersListener?.();
-    stopUsersListener = null;
-    collaborators = [];
-    users = [];
-    await signOut(auth);
-  } catch (error) {
-    console.error(error);
-    showToast("Não foi possível sair agora. Tente novamente.");
-  }
-}
-
-function navigateTo(moduleKey) {
-  const role = normalizeRole(currentUserProfile?.role);
-
-  if (moduleKey === "usuarios" && role !== "administrador") {
-    showToast("A administração de usuários é exclusiva do Administrador.");
-    return;
-  }
-
-  ui.navItems.forEach((item) => {
-    item.classList.toggle("active", item.dataset.module === moduleKey);
-  });
-
-  const title = moduleNames[moduleKey] || "Safety EPI";
-  ui.pageTitle.textContent = title;
-
-  ui.dashboardPanel.classList.add("hidden");
-  ui.collaboratorsPanel.classList.add("hidden");
-  ui.usersPanel.classList.add("hidden");
-  ui.placeholderPanel.classList.add("hidden");
-
-  if (moduleKey === "dashboard") {
-    ui.dashboardPanel.classList.remove("hidden");
-  } else if (moduleKey === "colaboradores") {
-    ui.collaboratorsPanel.classList.remove("hidden");
-    renderCollaborators();
-  } else if (moduleKey === "usuarios") {
-    ui.usersPanel.classList.remove("hidden");
-    renderUsers();
-  } else {
-    ui.placeholderPanel.classList.remove("hidden");
-    ui.placeholderTitle.textContent = title;
-  }
-
-  closeMobileMenu();
-}
-
-function togglePasswordVisibility() {
-  const showing = ui.password.type === "text";
-  ui.password.type = showing ? "password" : "text";
-  ui.togglePassword.setAttribute("aria-label", showing ? "Mostrar senha" : "Ocultar senha");
-  ui.togglePassword.setAttribute("title", showing ? "Mostrar senha" : "Ocultar senha");
-}
-
-function openMobileMenu() {
-  ui.sidebar.classList.add("open");
-  ui.sidebarBackdrop.classList.add("visible");
-}
-
-function closeMobileMenu() {
-  ui.sidebar.classList.remove("open");
-  ui.sidebarBackdrop.classList.remove("visible");
-}
-
-function formatDate(dateValue) {
-  if (!dateValue) return "—";
-  const [year, month, day] = String(dateValue).split("-");
-  if (!year || !month || !day) return dateValue;
-  return `${day}/${month}/${year}`;
-}
-
-function collaboratorMatchesSearch(collaborator, search) {
-  if (!search) return true;
-  const haystack = [
-    collaborator.nomeCompleto,
-    collaborator.matricula,
-    collaborator.cargoFuncao,
-    collaborator.setorContrato,
-    collaborator.gestorResponsavel,
-  ].join(" ").toLowerCase();
-  return haystack.includes(search.toLowerCase());
-}
-
-function updateCollaboratorMetric() {
-  if (!isManagement()) {
-    ui.collaboratorCountMetric.textContent = collaborators.length ? "1" : "0";
-    ui.collaboratorCountCaption.textContent = collaborators.length ? "Seu cadastro" : "Cadastro não vinculado";
-    return;
-  }
-
-  const activeCount = collaborators.filter((item) => item.ativo !== false).length;
-  ui.collaboratorCountMetric.textContent = String(activeCount);
-  ui.collaboratorCountCaption.textContent = activeCount === 1 ? "1 colaborador ativo" : `${activeCount} colaboradores ativos`;
-}
-
-function startCollaboratorsListener() {
-  stopCollaboratorsListener?.();
-  stopCollaboratorsListener = null;
-
-  const role = normalizeRole(currentUserProfile?.role);
-
-  if (managementRoles.has(role)) {
-    const q = query(collection(db, "colaboradores"), orderBy("nomeCompleto"));
-    stopCollaboratorsListener = onSnapshot(q, (snapshot) => {
-      collaborators = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-      updateCollaboratorMetric();
-      renderCollaborators();
-      if (normalizeRole(currentUserProfile?.role) === "administrador") renderUsers();
-    }, (error) => {
-      console.error("Falha ao carregar colaboradores:", error);
-      showToast("Não foi possível carregar os colaboradores. Verifique as regras do Firestore.");
-    });
-    return;
-  }
-
-  const collaboratorId = currentUserProfile?.colaboradorId;
-  if (!collaboratorId) {
-    collaborators = [];
-    updateCollaboratorMetric();
-    renderCollaborators();
-    return;
-  }
-
-  const ref = doc(db, "colaboradores", collaboratorId);
-  stopCollaboratorsListener = onSnapshot(ref, (snapshot) => {
-    collaborators = snapshot.exists() ? [{ id: snapshot.id, ...snapshot.data() }] : [];
-    updateCollaboratorMetric();
-    renderCollaborators();
-  }, (error) => {
-    console.error("Falha ao carregar cadastro do colaborador:", error);
-    showToast("Não foi possível carregar sua ficha de colaborador.");
-  });
-}
-
-function renderCollaborators() {
-  if (!ui.collaboratorTableBody) return;
-
-  const search = ui.collaboratorSearch.value.trim();
-  const visible = collaborators.filter((item) => collaboratorMatchesSearch(item, search));
-  const canManage = isManagement();
-
-  ui.collaboratorTableBody.innerHTML = "";
-  ui.collaboratorEmpty.classList.toggle("hidden", visible.length > 0);
-
-  if (!canManage && !currentUserProfile?.colaboradorId) {
-    ui.collaboratorEmpty.querySelector("strong").textContent = "Seu cadastro ainda não foi vinculado";
-    ui.collaboratorEmpty.querySelector("span").textContent = "Peça ao administrador para vincular sua conta ao seu registro de colaborador.";
-  } else if (visible.length === 0 && collaborators.length > 0) {
-    ui.collaboratorEmpty.querySelector("strong").textContent = "Nenhum resultado encontrado";
-    ui.collaboratorEmpty.querySelector("span").textContent = "Tente outro nome, matrícula, função, setor ou gestor.";
-  } else {
-    ui.collaboratorEmpty.querySelector("strong").textContent = "Nenhum colaborador cadastrado";
-    ui.collaboratorEmpty.querySelector("span").textContent = canManage
-      ? "Use o botão Novo colaborador para iniciar o cadastro."
-      : "Seu cadastro ainda não está disponível.";
-  }
-
-  visible.forEach((collaborator) => {
-    const row = document.createElement("tr");
-    const active = collaborator.ativo !== false;
-
-    const cells = [
-      collaborator.nomeCompleto || "—",
-      collaborator.matricula || "—",
-      collaborator.cargoFuncao || "—",
-      collaborator.setorContrato || "—",
-      formatDate(collaborator.dataAdmissao),
-      collaborator.gestorResponsavel || "—",
-    ];
-
-    cells.forEach((value, index) => {
-      const cell = document.createElement("td");
-      if (index === 0) {
-        const name = document.createElement("strong");
-        name.className = "table-primary";
-        name.textContent = value;
-        cell.appendChild(name);
-      } else {
-        cell.textContent = value;
-      }
-      row.appendChild(cell);
-    });
-
-    const statusCell = document.createElement("td");
-    const badge = document.createElement("span");
-    badge.className = `status-badge ${active ? "active" : "inactive"}`;
-    badge.textContent = active ? "Ativo" : "Inativo";
-    statusCell.appendChild(badge);
-    row.appendChild(statusCell);
-
-    const actionCell = document.createElement("td");
-    actionCell.className = "table-actions";
-    const actionButton = document.createElement("button");
-    actionButton.type = "button";
-    actionButton.className = "table-action-button";
-    actionButton.textContent = canManage ? "Editar" : "Ver";
-    actionButton.addEventListener("click", () => openCollaboratorModal(collaborator));
-    actionCell.appendChild(actionButton);
-    row.appendChild(actionCell);
-
-    ui.collaboratorTableBody.appendChild(row);
-  });
-
-  const total = collaborators.length;
-  const active = collaborators.filter((item) => item.ativo !== false).length;
-  const inactive = total - active;
-  ui.collaboratorSummary.textContent = canManage
-    ? `${total} cadastrado${total === 1 ? "" : "s"} • ${active} ativo${active === 1 ? "" : "s"} • ${inactive} inativo${inactive === 1 ? "" : "s"}`
-    : total ? "Seu cadastro de colaborador" : "Cadastro não vinculado";
-}
-
-
-function collaboratorNameById(id) {
-  if (!id) return "Não vinculado";
-  return collaborators.find((item) => item.id === id)?.nomeCompleto || "Vínculo não localizado";
-}
-
-function startUsersListener() {
-  stopUsersListener?.();
-  stopUsersListener = null;
-
-  if (normalizeRole(currentUserProfile?.role) !== "administrador") {
-    users = [];
-    return;
-  }
-
-  const q = query(collection(db, "usuarios"), orderBy("nome"));
-  stopUsersListener = onSnapshot(q, (snapshot) => {
-    users = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-    renderUsers();
-  }, (error) => {
-    console.error("Falha ao carregar usuários:", error);
-    showToast("Não foi possível carregar os usuários do sistema.");
-  });
-}
-
-function userMatchesSearch(user, search) {
-  if (!search) return true;
-  const haystack = [
-    user.nome,
-    user.email,
-    roleLabel(normalizeRole(user.role)),
-    collaboratorNameById(user.colaboradorId),
-  ].join(" ").toLowerCase();
-  return haystack.includes(search.toLowerCase());
-}
-
-function renderUsers() {
-  if (!ui.usersTableBody) return;
-  if (normalizeRole(currentUserProfile?.role) !== "administrador") return;
-
-  const search = ui.usersSearch.value.trim();
-  const visible = users.filter((item) => userMatchesSearch(item, search));
-  ui.usersTableBody.innerHTML = "";
-  ui.usersEmpty.classList.toggle("hidden", visible.length > 0);
-
-  if (visible.length === 0 && users.length > 0) {
-    ui.usersEmpty.querySelector("strong").textContent = "Nenhum resultado encontrado";
-    ui.usersEmpty.querySelector("span").textContent = "Tente pesquisar por nome, e-mail, perfil ou colaborador vinculado.";
-  } else {
-    ui.usersEmpty.querySelector("strong").textContent = "Nenhum usuário cadastrado";
-    ui.usersEmpty.querySelector("span").textContent = "Os usuários com acesso ao sistema aparecerão aqui.";
-  }
-
-  visible.forEach((user) => {
-    const row = document.createElement("tr");
-    const fields = [
-      user.nome || "—",
-      user.email || "—",
-      roleLabel(normalizeRole(user.role)),
-      collaboratorNameById(user.colaboradorId),
-    ];
-
-    fields.forEach((value, index) => {
-      const cell = document.createElement("td");
-      if (index === 0) {
-        const strong = document.createElement("strong");
-        strong.className = "table-primary";
-        strong.textContent = value;
-        cell.appendChild(strong);
-      } else {
-        cell.textContent = value;
-      }
-      row.appendChild(cell);
-    });
-
-    const statusCell = document.createElement("td");
-    const badge = document.createElement("span");
-    const active = user.ativo === true;
-    badge.className = `status-badge ${active ? "active" : "inactive"}`;
-    badge.textContent = active ? "Ativo" : "Inativo";
-    statusCell.appendChild(badge);
-    row.appendChild(statusCell);
-
-    const actionCell = document.createElement("td");
-    actionCell.className = "table-actions";
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "table-action-button";
-    button.textContent = "Vincular";
-    button.addEventListener("click", () => openUserLinkModal(user));
-    actionCell.appendChild(button);
-    row.appendChild(actionCell);
-    ui.usersTableBody.appendChild(row);
-  });
-
-  const linked = users.filter((item) => item.colaboradorId).length;
-  ui.usersSummary.textContent = `${users.length} usuário${users.length === 1 ? "" : "s"} • ${linked} vinculado${linked === 1 ? "" : "s"}`;
-}
-
-function populateUserLinkCollaborators(selectedId = "") {
-  ui.userLinkCollaborator.innerHTML = '<option value="">Selecione o colaborador</option>';
-  collaborators
-    .filter((item) => item.ativo !== false || item.id === selectedId)
-    .forEach((collaborator) => {
-      const option = document.createElement("option");
-      option.value = collaborator.id;
-      option.textContent = collaborator.nomeCompleto || collaborator.id;
-      option.selected = collaborator.id === selectedId;
-      ui.userLinkCollaborator.appendChild(option);
-    });
-}
-
-function openUserLinkModal(user) {
-  ui.userLinkMessage.textContent = "";
-  ui.userLinkMessage.className = "message hidden";
-  ui.userLinkId.value = user.id;
-  ui.userLinkName.value = user.nome || "";
-  ui.userLinkEmail.value = user.email || "";
-  ui.userLinkRole.value = roleLabel(normalizeRole(user.role));
-  populateUserLinkCollaborators(user.colaboradorId || "");
-  ui.userLinkModalTitle.textContent = "Vincular usuário ao colaborador";
-  ui.userLinkModal.classList.remove("hidden");
-  document.body.classList.add("modal-open");
-}
-
-function closeUserLinkDialog() {
-  ui.userLinkModal.classList.add("hidden");
-  document.body.classList.remove("modal-open");
-  ui.userLinkForm.reset();
-  ui.userLinkId.value = "";
-  ui.userLinkMessage.textContent = "";
-  ui.userLinkMessage.className = "message hidden";
-}
-
-async function handleUserLinkSubmit(event) {
-  event.preventDefault();
-  if (normalizeRole(currentUserProfile?.role) !== "administrador") return;
-
-  const userId = ui.userLinkId.value;
-  const collaboratorId = ui.userLinkCollaborator.value;
-  if (!userId || !collaboratorId) {
-    ui.userLinkMessage.textContent = "Selecione o colaborador que corresponde a esta conta de acesso.";
-    ui.userLinkMessage.className = "message error";
-    return;
-  }
-
-  ui.userLinkSaveButton.disabled = true;
-  try {
-    await updateDoc(doc(db, "usuarios", userId), {
-      colaboradorId,
-      atualizadoEm: serverTimestamp(),
-      atualizadoPor: auth.currentUser.uid,
-    });
-
-    if (userId === auth.currentUser.uid) {
-      currentUserProfile = { ...currentUserProfile, colaboradorId };
-    }
-
-    showToast("Usuário vinculado ao colaborador com sucesso.");
-    closeUserLinkDialog();
-  } catch (error) {
-    console.error("Falha ao vincular usuário:", error);
-    ui.userLinkMessage.textContent = error?.code === "permission-denied"
-      ? "O Firestore recusou a alteração. Verifique as regras publicadas."
-      : "Não foi possível salvar o vínculo. Tente novamente.";
-    ui.userLinkMessage.className = "message error";
-  } finally {
-    ui.userLinkSaveButton.disabled = false;
-  }
-}
-
-function clearCollaboratorFormMessage() {
-  ui.collaboratorFormMessage.textContent = "";
-  ui.collaboratorFormMessage.className = "message hidden";
-}
-
-function showCollaboratorFormMessage(text, type = "error") {
-  ui.collaboratorFormMessage.textContent = text;
-  ui.collaboratorFormMessage.className = `message ${type}`;
-}
-
-function setCollaboratorFormDisabled(disabled) {
-  [...ui.collaboratorForm.elements].forEach((element) => {
-    element.disabled = disabled;
-  });
-  ui.closeCollaboratorModal.disabled = disabled;
-  ui.cancelCollaboratorModal.disabled = disabled;
-}
-
-function openCollaboratorModal(collaborator = null) {
-  clearCollaboratorFormMessage();
-  const canManage = isManagement();
-  const editing = Boolean(collaborator?.id);
-
-  ui.collaboratorId.value = collaborator?.id || "";
-  ui.collaboratorName.value = collaborator?.nomeCompleto || "";
-  ui.collaboratorRegistration.value = collaborator?.matricula || "";
-  ui.collaboratorRole.value = collaborator?.cargoFuncao || "";
-  ui.collaboratorSector.value = collaborator?.setorContrato || "";
-  ui.collaboratorAdmission.value = collaborator?.dataAdmissao || "";
-  ui.collaboratorManager.value = collaborator?.gestorResponsavel || "";
-  ui.collaboratorStatus.value = collaborator?.ativo === false ? "false" : "true";
-
-  ui.collaboratorModalTitle.textContent = editing ? (canManage ? "Editar colaborador" : "Dados do colaborador") : "Novo colaborador";
-  ui.collaboratorSaveButton.classList.toggle("hidden", !canManage);
-  ui.cancelCollaboratorModal.textContent = canManage ? "Cancelar" : "Fechar";
-
-  [...ui.collaboratorForm.elements].forEach((element) => {
-    if (element === ui.collaboratorId) return;
-    element.disabled = !canManage;
-  });
-
-  ui.collaboratorModal.classList.remove("hidden");
-  document.body.classList.add("modal-open");
-  if (canManage) setTimeout(() => ui.collaboratorName.focus(), 40);
-}
-
-function closeCollaboratorDialog() {
-  ui.collaboratorModal.classList.add("hidden");
-  document.body.classList.remove("modal-open");
-  ui.collaboratorForm.reset();
-  ui.collaboratorId.value = "";
-  ui.collaboratorStatus.value = "true";
-  clearCollaboratorFormMessage();
-}
-
-async function handleCollaboratorSubmit(event) {
-  event.preventDefault();
-  clearCollaboratorFormMessage();
-
-  if (!isManagement()) {
-    showCollaboratorFormMessage("Seu perfil não possui permissão para alterar este cadastro.");
-    return;
-  }
-
-  const nomeCompleto = ui.collaboratorName.value.trim();
-  if (!nomeCompleto) {
-    showCollaboratorFormMessage("Informe o nome completo do colaborador.");
-    ui.collaboratorName.focus();
-    return;
-  }
-
-  const payload = {
-    nomeCompleto,
-    matricula: ui.collaboratorRegistration.value.trim(),
-    cargoFuncao: ui.collaboratorRole.value.trim(),
-    setorContrato: ui.collaboratorSector.value.trim(),
-    dataAdmissao: ui.collaboratorAdmission.value,
-    gestorResponsavel: ui.collaboratorManager.value.trim(),
-    ativo: ui.collaboratorStatus.value === "true",
-    atualizadoEm: serverTimestamp(),
-    atualizadoPor: auth.currentUser.uid,
-  };
-
-  const collaboratorId = ui.collaboratorId.value;
-  setCollaboratorFormDisabled(true);
-  ui.collaboratorSaveButton.classList.remove("hidden");
-  ui.collaboratorSaveLabel.textContent = collaboratorId ? "Salvando..." : "Cadastrando...";
-
-  try {
-    if (collaboratorId) {
-      await updateDoc(doc(db, "colaboradores", collaboratorId), payload);
-      showToast("Cadastro do colaborador atualizado.");
-    } else {
-      await addDoc(collection(db, "colaboradores"), {
-        ...payload,
-        criadoEm: serverTimestamp(),
-        criadoPor: auth.currentUser.uid,
-      });
-      showToast("Colaborador cadastrado com sucesso.");
-    }
-    closeCollaboratorDialog();
-  } catch (error) {
-    console.error("Falha ao salvar colaborador:", error);
-    showCollaboratorFormMessage(
-      error?.code === "permission-denied"
-        ? "O Firestore recusou a gravação. Publique as novas regras de segurança antes de testar."
-        : "Não foi possível salvar o colaborador. Tente novamente."
-    );
-  } finally {
-    setCollaboratorFormDisabled(false);
-    ui.collaboratorSaveLabel.textContent = "Salvar colaborador";
-  }
-}
-
-ui.loginForm.addEventListener("submit", handleLogin);
-ui.logoutButton.addEventListener("click", handleLogout);
-ui.togglePassword.addEventListener("click", togglePasswordVisibility);
-ui.menuToggle.addEventListener("click", openMobileMenu);
-ui.sidebarBackdrop.addEventListener("click", closeMobileMenu);
-ui.backDashboard.addEventListener("click", () => navigateTo("dashboard"));
-ui.newCollaboratorButton.addEventListener("click", () => openCollaboratorModal());
-ui.collaboratorSearch.addEventListener("input", renderCollaborators);
-ui.usersSearch.addEventListener("input", renderUsers);
-ui.userLinkForm.addEventListener("submit", handleUserLinkSubmit);
-ui.closeUserLinkModal.addEventListener("click", closeUserLinkDialog);
-ui.cancelUserLinkModal.addEventListener("click", closeUserLinkDialog);
-ui.collaboratorForm.addEventListener("submit", handleCollaboratorSubmit);
-ui.closeCollaboratorModal.addEventListener("click", closeCollaboratorDialog);
-ui.cancelCollaboratorModal.addEventListener("click", closeCollaboratorDialog);
-
-ui.collaboratorModal.addEventListener("click", (event) => {
-  if (event.target === ui.collaboratorModal) closeCollaboratorDialog();
-});
-
-ui.userLinkModal.addEventListener("click", (event) => {
-  if (event.target === ui.userLinkModal) closeUserLinkDialog();
-});
-
-ui.navItems.forEach((item) => {
-  item.addEventListener("click", () => navigateTo(item.dataset.module));
-});
-
-window.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") {
-    closeMobileMenu();
-    if (!ui.collaboratorModal.classList.contains("hidden")) closeCollaboratorDialog();
-    if (!ui.userLinkModal.classList.contains("hidden")) closeUserLinkDialog();
-  }
-});
-
-try {
-  await setPersistence(auth, browserLocalPersistence);
-} catch (error) {
-  console.warn("Não foi possível configurar persistência local:", error);
-}
-
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    stopCollaboratorsListener?.();
-    stopCollaboratorsListener = null;
-    stopUsersListener?.();
-    stopUsersListener = null;
-    collaborators = [];
-    users = [];
-    currentUserProfile = null;
-    showLogin();
-    return;
-  }
-
-  ui.loadingScreen.classList.remove("hidden");
-  ui.loginView.classList.add("hidden");
-  ui.appView.classList.add("hidden");
-  await handleAuthenticatedUser(user);
-});
+async function loadProfile(user){const s=await getDoc(doc(db,"usuarios",user.uid));if(!s.exists())throw new Error("PROFILE_NOT_FOUND");const p={id:s.id,...s.data()};if(p.ativo!==true)throw new Error("USER_INACTIVE");if(!ROLES.includes(norm(p.role)))throw new Error("INVALID_ROLE");p.role=norm(p.role);return p;}
+function authMessage(e){const m=e?.message||"";if(m.includes("PROFILE_NOT_FOUND"))return"Sua conta de login ainda não possui perfil no Safety EPI.";if(m.includes("USER_INACTIVE"))return"Seu acesso está inativo.";if(m.includes("INVALID_ROLE"))return"Seu perfil de acesso é inválido.";return ({"auth/invalid-credential":"E-mail ou senha inválidos.","auth/invalid-email":"E-mail inválido.","auth/too-many-requests":"Muitas tentativas. Aguarde e tente novamente."})[e?.code]||"Não foi possível concluir o acesso.";}
+
+function renderDashboard(){const d=state.data;const activeWorks=d.obras.filter(x=>x.status==="Em andamento").length;const inUse=d.equipamentos.filter(x=>x.status==="Em uso").length;const pending=isMgmt()?d.movimentacoes.filter(x=>x.statusAssinatura==="pendente").length:pendingOwnCount();const collabs=d.colaboradores.filter(x=>x.ativo!==false).length;ui.root.innerHTML=`<div class="welcome-card"><div><span class="eyebrow">BEM-VINDO</span><h2>Olá, ${esc((state.profile?.nome||"Usuário").split(" ")[0])}.</h2><p>Gestão integrada de EPIs, equipamentos, obras, rastreabilidade e assinaturas.</p></div><div class="status-pill"><span class="status-dot"></span>Sistema conectado</div></div><div class="metric-grid"><article class="metric-card"><span class="metric-label">Colaboradores ativos</span><strong>${collabs}</strong><small>Cadastros disponíveis</small></article><article class="metric-card"><span class="metric-label">Obras ativas</span><strong>${activeWorks}</strong><small>Em andamento</small></article><article class="metric-card"><span class="metric-label">Equipamentos em uso</span><strong>${inUse}</strong><small>Unidades rastreáveis</small></article><article class="metric-card"><span class="metric-label">Assinaturas pendentes</span><strong>${pending}</strong><small>${isMgmt()?"Sistema":"Aguardando seu aceite"}</small></article></div><div class="dashboard-grid"><article class="section-card"><span class="eyebrow">V1 — COMPLETA</span><h3>Fluxo operacional</h3><ul class="check-list"><li><span>✓</span>Cadastros e obras</li><li><span>✓</span>EPIs, estoque e rastreabilidade</li><li><span>✓</span>KITs, cordas e equipamentos</li><li><span>✓</span>Entregas, devoluções e assinaturas</li><li><span>✓</span>Relatórios, PDF e QR Code</li></ul></article><article class="section-card"><span class="eyebrow">ATENÇÃO</span><h3>${pending?"Existem pendências":"Operação sem pendências críticas"}</h3><p class="muted small">${pending?`${pending} movimentação(ões) aguardando assinatura.`:"Use os módulos do menu para iniciar os testes completos da V1."}</p>${pending?`<div class="notice-box"><strong>Assinaturas</strong><span>Abra Movimentações para conferir os registros pendentes.</span></div>`:""}</article></div>`;}
+
+function renderCollaborators(){const rows=[...state.data.colaboradores].sort((a,b)=>byName(a,b,"nomeCompleto"));ui.root.innerHTML=moduleHeader("CADASTRO CORPORATIVO","Colaboradores","Base individual usada nas fichas, obras, movimentações e contas de acesso.",isMgmt()?`<button class="module-primary-button" data-action="new-collab">+ Novo colaborador</button>`:"")+`<div class="module-toolbar"><input class="search-input" id="collab-search" placeholder="Pesquisar nome, matrícula ou função"><div class="toolbar-spacer"></div><span class="muted small">${rows.length} cadastro(s)</span></div><div class="module-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Nome</th><th>Matrícula</th><th>Função</th><th>Setor/contrato</th><th>Admissão</th><th>Status</th><th>Ações</th></tr></thead><tbody id="collab-body"></tbody></table></div></div>`;const paint=(q="")=>{$("#collab-body").innerHTML=rows.filter(x=>!q||[x.nomeCompleto,x.matricula,x.cargoFuncao,x.setorContrato].join(" ").toLowerCase().includes(q.toLowerCase())).map(x=>`<tr><td><strong>${esc(x.nomeCompleto)}</strong></td><td>${esc(x.matricula||"—")}</td><td>${esc(x.cargoFuncao||"—")}</td><td>${esc(x.setorContrato||"—")}</td><td>${esc(dateBR(x.dataAdmissao))}</td><td>${badge(x.ativo===false?"Inativo":"Ativo",x.ativo===false?"inactive":"active")}</td><td><button class="table-action-button" data-action="edit-collab" data-id="${x.id}">${isMgmt()?"Editar":"Visualizar"}</button>${isMgmt()?`<button class="table-action-button" data-action="collab-history" data-id="${x.id}">Ficha</button>`:""}</td></tr>`).join("")||`<tr><td colspan="7" class="empty-state">Nenhum colaborador encontrado.</td></tr>`};paint();$("#collab-search").addEventListener("input",e=>paint(e.target.value));}
+function openCollaborator(id=""){const x=id?findBy("colaboradores",id):{};const ro=!isMgmt();modal(id?(ro?"Dados do colaborador":"Editar colaborador"):"Novo colaborador",`<form id="collab-form"><div class="form-grid">${field("Nome completo","nomeCompleto",x?.nomeCompleto||"",{required:true,disabled:ro})}${field("Matrícula / cadastro","matricula",x?.matricula||"",{disabled:ro})}${field("Cargo / função","cargoFuncao",x?.cargoFuncao||"",{disabled:ro})}${field("Setor / contrato","setorContrato",x?.setorContrato||"",{disabled:ro})}${field("Data de admissão","dataAdmissao",x?.dataAdmissao||"",{type:"date",disabled:ro})}${field("Gestor responsável","gestorResponsavel",x?.gestorResponsavel||"",{disabled:ro})}${selectField("Status","ativo",[["true","Ativo"],["false","Inativo"]],x?.ativo===false?"false":"true",{disabled:ro})}</div><div id="modal-msg"></div></form>`,{footer:ro?`<button class="secondary-button" data-close-modal>Fechar</button>`:`<button class="secondary-button" data-close-modal>Cancelar</button><button class="module-primary-button" type="submit" form="collab-form">Salvar colaborador</button>`});if(!ro)$("#collab-form").addEventListener("submit",async e=>{e.preventDefault();const f=formDataObj(e.target);if(!f.nomeCompleto.trim())return;const p={...f,nomeCompleto:f.nomeCompleto.trim(),ativo:f.ativo==="true",atualizadoEm:serverTimestamp(),atualizadoPor:state.user.uid};try{if(id)await updateDoc(doc(db,"colaboradores",id),p);else await addDoc(collection(db,"colaboradores"),{...p,criadoEm:serverTimestamp(),criadoPor:state.user.uid});await audit(id?"Atualização":"Cadastro","colaborador",id||"novo",f.nomeCompleto);closeModal();showToast("Colaborador salvo com sucesso.");}catch(err){$("#modal-msg").innerHTML=msgBox("Não foi possível salvar. "+(err.code||""));console.error(err);}});}
+function showCollaboratorHistory(id){const c=findBy("colaboradores",id);if(!c)return;const ms=state.data.movimentacoes.filter(m=>m.colaboradorId===id).sort((a,b)=>(b.criadoEm?.seconds||0)-(a.criadoEm?.seconds||0));modal(`Ficha — ${c.nomeCompleto}`,`<div class="detail-grid"><div class="detail-item"><span>Função</span><strong>${esc(c.cargoFuncao||"—")}</strong></div><div class="detail-item"><span>Matrícula</span><strong>${esc(c.matricula||"—")}</strong></div><div class="detail-item"><span>Gestor</span><strong>${esc(c.gestorResponsavel||"—")}</strong></div></div><div class="section-separator"></div><h4>Movimentações</h4><div class="timeline">${ms.map(m=>`<div class="timeline-item"><strong>${esc(m.itemDescricao||m.tipoItem)} — ${esc(m.movimento)}</strong><span>${dateTimeBR(m.criadoEm)} • ${esc(m.obraNome||"Sem obra")} • ${esc(m.statusAssinatura||"")}</span></div>`).join("")||"<p class='muted small'>Sem movimentações.</p>"}</div>`,{wide:true,footer:`<button class="secondary-button" data-close-modal>Fechar</button>`});}
+
+function renderWorks(){const rows=[...state.data.obras].sort((a,b)=>byName(a,b,"nome"));ui.root.innerHTML=moduleHeader("PLANEJAMENTO OPERACIONAL","Obras","Vincule entregas, KITs e cordas ao contrato correto.",isMgmt()?`<button class="module-primary-button" data-action="new-work">+ Nova obra</button>`:"")+`<div class="module-toolbar"><input class="search-input" id="work-search" placeholder="Pesquisar obra ou cliente"><div class="toolbar-spacer"></div><select id="work-filter" class="filter-select"><option value="">Todos os status</option><option>Planejada</option><option>Em andamento</option><option>Encerrada</option><option>Cancelada</option></select></div><div class="module-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Obra</th><th>Cliente</th><th>Período</th><th>Status</th><th>Ações</th></tr></thead><tbody id="work-body"></tbody></table></div></div>`;const paint=()=>{const q=$("#work-search").value.toLowerCase(),f=$("#work-filter").value;$("#work-body").innerHTML=rows.filter(x=>(!q||[x.nome,x.cliente].join(" ").toLowerCase().includes(q))&&(!f||x.status===f)).map(x=>`<tr><td><strong>${esc(x.nome)}</strong></td><td>${esc(x.cliente||"—")}</td><td>${esc(dateBR(x.dataInicio))} a ${esc(dateBR(x.dataFim))}</td><td>${badge(x.status||"Planejada",statusType(x.status))}</td><td><button class="table-action-button" data-action="edit-work" data-id="${x.id}">Editar</button><button class="table-action-button" data-action="mobilize" data-id="${x.id}" ${x.status==="Encerrada"||x.status==="Cancelada"?"disabled":""}>Mobilizar</button><button class="table-action-button" data-action="demobilize" data-id="${x.id}" ${x.status!=="Em andamento"?"disabled":""}>Desmobilizar</button></td></tr>`).join("")||`<tr><td colspan="5" class="empty-state">Nenhuma obra encontrada.</td></tr>`};paint();$("#work-search").oninput=paint;$("#work-filter").onchange=paint;}
+function openWork(id=""){const x=id?findBy("obras",id):{};modal(id?"Editar obra":"Nova obra",`<form id="work-form"><div class="form-grid">${field("Nome da obra","nome",x?.nome||"",{required:true})}${field("Cliente / contratante","cliente",x?.cliente||"")}${field("Contrato / referência","contrato",x?.contrato||"")}${selectField("Status","status",["Planejada","Em andamento","Encerrada","Cancelada"],x?.status||"Planejada")}${field("Data de início","dataInicio",x?.dataInicio||"",{type:"date"})}${field("Data prevista/fim","dataFim",x?.dataFim||"",{type:"date"})}${textArea("Local / observações","observacoes",x?.observacoes||"")}</div><div id="modal-msg"></div></form>`,{footer:`<button class="secondary-button" data-close-modal>Cancelar</button><button class="module-primary-button" type="submit" form="work-form">Salvar obra</button>`});$("#work-form").onsubmit=async e=>{e.preventDefault();const f=formDataObj(e.target);if(!f.nome.trim())return;const active=state.data.movimentacoes.some(m=>m.obraId===id&&["em_posse","aguardando_assinatura"].includes(m.estado)&&["kit","equipamento"].includes(m.tipoItem));if(id&&f.status==="Encerrada"&&active){$("#modal-msg").innerHTML=msgBox("Existem KITs/equipamentos ainda alocados nesta obra. Faça a desmobilização antes de encerrar.");return;}const p={...f,nome:f.nome.trim(),atualizadoEm:serverTimestamp(),atualizadoPor:state.user.uid};try{id?await updateDoc(doc(db,"obras",id),p):await addDoc(collection(db,"obras"),{...p,criadoEm:serverTimestamp(),criadoPor:state.user.uid});await audit(id?"Atualização":"Cadastro","obra",id||"nova",f.nome);closeModal();showToast("Obra salva.");}catch(err){$("#modal-msg").innerHTML=msgBox("Erro ao salvar obra: "+(err.code||""));}};}
+
+function renderEpis(){const rows=[...state.data.epis].sort((a,b)=>byName(a,b,"nome"));ui.root.innerHTML=moduleHeader("CATÁLOGO DE EPI","EPIs","Cadastre tipos de EPI e uniformes com CA, fabricante e regra de controle.",isMgmt()?`<button class="module-primary-button" data-action="new-epi">+ Novo EPI</button>`:"")+`<div class="module-toolbar"><input class="search-input" id="epi-search" placeholder="Pesquisar EPI, CA ou fabricante"><div class="toolbar-spacer"></div><span class="muted small">${rows.length} item(ns)</span></div><div class="module-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>EPI / Uniforme</th><th>CA</th><th>Fabricante</th><th>Modelo</th><th>Controle</th><th>Status</th><th>Ações</th></tr></thead><tbody id="epi-body"></tbody></table></div></div>`;const paint=(q="")=>{$("#epi-body").innerHTML=rows.filter(x=>!q||[x.nome,x.ca,x.fabricante,x.modelo].join(" ").toLowerCase().includes(q.toLowerCase())).map(x=>`<tr><td><strong>${esc(x.nome)}</strong></td><td>${esc(x.ca||"—")}</td><td>${esc(x.fabricante||"—")}</td><td>${esc(x.modelo||"—")}</td><td>${esc(x.tipoControle||"Consumo")}</td><td>${badge(x.ativo===false?"Inativo":"Ativo",x.ativo===false?"inactive":"active")}</td><td>${isMgmt()?`<button class="table-action-button" data-action="edit-epi" data-id="${x.id}">Editar</button>`:"—"}</td></tr>`).join("")||`<tr><td colspan="7" class="empty-state">Nenhum EPI cadastrado.</td></tr>`};paint();$("#epi-search").oninput=e=>paint(e.target.value);}
+function openEpi(id=""){const x=id?findBy("epis",id):{};modal(id?"Editar EPI":"Novo EPI",`<form id="epi-form"><div class="form-grid">${field("EPI / uniforme","nome",x?.nome||"",{required:true})}${field("Certificado de Aprovação — CA","ca",x?.ca||"")}${field("Fabricante","fabricante",x?.fabricante||"")}${field("Modelo","modelo",x?.modelo||"")}${field("Tamanho / variação padrão","tamanho",x?.tamanho||"")}${selectField("Tipo de controle","tipoControle",[["Consumo","Consumível / nova entrega por obra"],["Individual","Uso individual / sujeito a devolução"]],x?.tipoControle||"Consumo")}${field("Estoque mínimo","estoqueMinimo",x?.estoqueMinimo||0,{type:"number",min:"0",step:"1"})}${selectField("Status","ativo",[["true","Ativo"],["false","Inativo"]],x?.ativo===false?"false":"true")}${textArea("Observações","observacoes",x?.observacoes||"")}</div><div id="modal-msg"></div></form>`,{footer:`<button class="secondary-button" data-close-modal>Cancelar</button><button class="module-primary-button" type="submit" form="epi-form">Salvar EPI</button>`});$("#epi-form").onsubmit=async e=>{e.preventDefault();const f=formDataObj(e.target);const p={...f,nome:f.nome.trim(),estoqueMinimo:Number(f.estoqueMinimo||0),ativo:f.ativo==="true",atualizadoEm:serverTimestamp(),atualizadoPor:state.user.uid};try{id?await updateDoc(doc(db,"epis",id),p):await addDoc(collection(db,"epis"),{...p,criadoEm:serverTimestamp(),criadoPor:state.user.uid});await audit(id?"Atualização":"Cadastro","epi",id||"novo",f.nome);closeModal();showToast("EPI salvo.");}catch(err){$("#modal-msg").innerHTML=msgBox("Erro ao salvar EPI: "+(err.code||""));}};}
+
+function renderEquipment(){const rows=[...state.data.equipamentos].sort((a,b)=>byName(a,b,"tag"));ui.root.innerHTML=moduleHeader("RASTREABILIDADE","Equipamentos","Controle unitário de equipamentos de acesso por cordas, inclusive cordas avulsas.",isMgmt()?`<button class="module-primary-button" data-action="new-equipment">+ Novo equipamento</button>`:"")+`<div class="module-toolbar"><input class="search-input" id="equipment-search" placeholder="Pesquisar TAG, equipamento, série ou fabricante"><div class="toolbar-spacer"></div><select class="filter-select" id="equipment-type-filter"><option value="">Todos</option><option value="Corda">Cordas</option><option value="Equipamento">Outros equipamentos</option></select></div><div class="module-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>TAG</th><th>Equipamento</th><th>Tipo</th><th>Fabricante / Modelo</th><th>Série</th><th>Status</th><th>Ações</th></tr></thead><tbody id="equipment-body"></tbody></table></div></div>`;const paint=()=>{const q=$("#equipment-search").value.toLowerCase(),tf=$("#equipment-type-filter").value;$("#equipment-body").innerHTML=rows.filter(x=>(!q||[x.tag,x.equipamento,x.numeroSerie,x.fabricante,x.modelo].join(" ").toLowerCase().includes(q))&&(!tf||x.tipo===tf)).map(x=>`<tr><td><strong>${esc(x.tag)}</strong></td><td>${esc(x.equipamento)}</td><td>${esc(x.tipo||"Equipamento")}</td><td>${esc([x.fabricante,x.modelo].filter(Boolean).join(" / ")||"—")}</td><td>${esc(x.numeroSerie||"—")}</td><td>${badge(x.status||"Disponível",statusType(x.status))}</td><td><button class="table-action-button" data-action="equipment-detail" data-id="${x.id}">Rastreabilidade</button>${isMgmt()?`<button class="table-action-button" data-action="edit-equipment" data-id="${x.id}">Editar</button>`:""}<button class="table-action-button" data-action="equipment-qr" data-id="${x.id}">QR</button></td></tr>`).join("")||`<tr><td colspan="7" class="empty-state">Nenhum equipamento cadastrado.</td></tr>`};paint();$("#equipment-search").oninput=paint;$("#equipment-type-filter").onchange=paint;}
+function openEquipment(id=""){const x=id?findBy("equipamentos",id):{};modal(id?"Editar equipamento":"Novo equipamento",`<form id="equipment-form"><div class="form-grid three">${field("Equipamento","equipamento",x?.equipamento||"",{required:true})}${field("TAG Safety","tag",x?.tag||"",{required:true,help:"Ex.: SAF-COR-001 ou SAF-DES-001"})}${selectField("Tipo","tipo",["Equipamento","Corda"],x?.tipo||"Equipamento")}${field("Fabricante","fabricante",x?.fabricante||"")}${field("Modelo","modelo",x?.modelo||"")}${field("Nº de série","numeroSerie",x?.numeroSerie||"")}${field("Lote / fabricação","loteFabricacao",x?.loteFabricacao||"")}${field("Data de compra","dataCompra",x?.dataCompra||"",{type:"date"})}${field("Nota fiscal","notaFiscal",x?.notaFiscal||"")}${field("Vida útil / validade","vidaUtilValidade",x?.vidaUtilValidade||"")}${field("Norma / certificação","normaCertificacao",x?.normaCertificacao||"")}${selectField("Status atual","status",["Disponível","Reservado","Em uso","Aguardando inspeção","Quarentena","Retirado de serviço","Descartado"],x?.status||"Disponível")}${field("Comprimento original (m)","comprimentoOriginal",x?.comprimentoOriginal||"",{type:"number",step:"0.1"})}${field("Comprimento atual (m)","comprimentoAtual",x?.comprimentoAtual||"",{type:"number",step:"0.1"})}${field("Diâmetro (mm)","diametro",x?.diametro||"",{type:"number",step:"0.1"})}${textArea("Observações","observacoes",x?.observacoes||"")}</div><div id="modal-msg"></div></form>`,{wide:true,footer:`<button class="secondary-button" data-close-modal>Cancelar</button><button class="module-primary-button" type="submit" form="equipment-form">Salvar equipamento</button>`});const typeSel=$("#tipo");const toggle=()=>{["comprimentoOriginal","comprimentoAtual","diametro"].forEach(n=>$("#"+n).closest(".form-field").classList.toggle("hidden",typeSel.value!=="Corda"));};toggle();typeSel.onchange=toggle;$("#equipment-form").onsubmit=async e=>{e.preventDefault();const f=formDataObj(e.target);const dup=state.data.equipamentos.find(y=>norm(y.tag)===norm(f.tag)&&y.id!==id);if(dup){$("#modal-msg").innerHTML=msgBox("Já existe equipamento com esta TAG.");return;}const p={...f,equipamento:f.equipamento.trim(),tag:f.tag.trim().toUpperCase(),comprimentoOriginal:Number(f.comprimentoOriginal||0),comprimentoAtual:Number(f.comprimentoAtual||0),diametro:Number(f.diametro||0),atualizadoEm:serverTimestamp(),atualizadoPor:state.user.uid};try{id?await updateDoc(doc(db,"equipamentos",id),p):await addDoc(collection(db,"equipamentos"),{...p,criadoEm:serverTimestamp(),criadoPor:state.user.uid});await audit(id?"Atualização":"Cadastro","equipamento",id||"novo",`${f.tag} — ${f.equipamento}`);closeModal();showToast("Equipamento salvo.");}catch(err){$("#modal-msg").innerHTML=msgBox("Erro ao salvar equipamento: "+(err.code||""));}};}
+function equipmentHistory(id){const e=findBy("equipamentos",id);if(!e)return;const inspections=state.data.inspecoes.filter(i=>i.equipamentoId===id);const direct=state.data.movimentacoes.filter(m=>m.tipoItem==="equipamento"&&m.itemId===id);const kitMoves=state.data.movimentacoes.filter(m=>m.tipoItem==="kit"&&(m.componentesSnapshot||[]).some(c=>c.id===id));const events=[...inspections.map(i=>({date:i.data||i.criadoEm,title:`Inspeção — ${i.resultado}`,detail:`${i.tipoInspecao||"Inspeção"} • ${i.responsavel||""} • ${i.observacoes||""}`})),...direct.map(m=>({date:m.criadoEm,title:`${m.movimento} — ${m.colaboradorNome}`,detail:`${m.obraNome||"Sem obra"} • ${m.statusAssinatura}`})),...kitMoves.map(m=>({date:m.criadoEm,title:`KIT ${m.itemDescricao} — ${m.movimento}`,detail:`${m.colaboradorNome} • ${m.obraNome||"Sem obra"}`}))].sort((a,b)=>{const da=a.date?.toDate?a.date.toDate():new Date(a.date||0),dbb=b.date?.toDate?b.date.toDate():new Date(b.date||0);return dbb-da;});modal(`Rastreabilidade — ${e.tag}`,`<div class="detail-grid"><div class="detail-item"><span>Equipamento</span><strong>${esc(e.equipamento)}</strong></div><div class="detail-item"><span>Fabricante / modelo</span><strong>${esc([e.fabricante,e.modelo].filter(Boolean).join(" / ")||"—")}</strong></div><div class="detail-item"><span>Nº de série</span><strong>${esc(e.numeroSerie||"—")}</strong></div><div class="detail-item"><span>Lote / fabricação</span><strong>${esc(e.loteFabricacao||"—")}</strong></div><div class="detail-item"><span>Vida útil / validade</span><strong>${esc(e.vidaUtilValidade||"—")}</strong></div><div class="detail-item"><span>Status</span><strong>${esc(e.status||"Disponível")}</strong></div></div><div class="section-separator"></div><h4>Histórico do equipamento</h4><div class="timeline">${events.map(v=>`<div class="timeline-item"><strong>${esc(v.title)}</strong><span>${dateTimeBR(v.date)} • ${esc(v.detail)}</span></div>`).join("")||`<p class="muted small">Ainda não há eventos registrados.</p>`}</div><div class="warning-strip">Critério: equipamento ou corda com defeito, desgaste, degradação, deformação, contaminação, alteração, impacto, rastreabilidade insuficiente ou histórico desconhecido deve ser retirado de uso e avaliado conforme procedimento interno.</div>`,{wide:true,footer:`<button class="secondary-button" data-close-modal>Fechar</button>${isMgmt()?`<button class="module-primary-button" data-action="new-inspection" data-id="${e.id}">Registrar inspeção</button>`:""}`});}
+async function showQR(id){const e=findBy("equipamentos",id);if(!e)return;const base=location.origin+location.pathname.replace(/[^/]*$/,"");const url=`${base}?equipamento=${encodeURIComponent(id)}`;modal(`QR Code — ${e.tag}`,`<div class="qr-box"><canvas id="qr-canvas"></canvas><p class="muted small">${esc(e.equipamento)} • ${esc(e.tag)}</p></div>`,{narrow:true,footer:`<button class="secondary-button" data-close-modal>Fechar</button><button class="module-primary-button" id="download-qr">Baixar PNG</button>`});if(window.QRCode){await window.QRCode.toCanvas($("#qr-canvas"),url,{width:260,margin:2});$("#download-qr").onclick=()=>{const a=document.createElement("a");a.download=`QR-${e.tag}.png`;a.href=$("#qr-canvas").toDataURL("image/png");a.click();};}else $(".qr-box").innerHTML=msgBox("Biblioteca de QR Code não carregou.");}
+
+function renderKits(){const rows=[...state.data.kits].sort((a,b)=>byName(a,b,"codigo"));ui.root.innerHTML=moduleHeader("AGRUPAMENTO","KITs de acesso por cordas","O KIT agrupa equipamentos rastreáveis; cordas permanecem avulsas.",isMgmt()?`<button class="module-primary-button" data-action="new-kit">+ Novo KIT</button>`:"")+`<div class="module-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Código</th><th>Descrição</th><th>Componentes</th><th>Status</th><th>Ações</th></tr></thead><tbody>${rows.map(k=>`<tr><td><strong>${esc(k.codigo)}</strong></td><td>${esc(k.descricao||"KIT de acesso por cordas")}</td><td>${(k.componentes||[]).length}</td><td>${badge(k.status||"Disponível",statusType(k.status))}</td><td><button class="table-action-button" data-action="kit-detail" data-id="${k.id}">Componentes</button>${isMgmt()?`<button class="table-action-button" data-action="edit-kit" data-id="${k.id}">Editar</button>`:""}</td></tr>`).join("")||`<tr><td colspan="5" class="empty-state">Nenhum KIT cadastrado.</td></tr>`}</tbody></table></div></div>`;}
+function openKit(id=""){const x=id?findBy("kits",id):{};const equipments=state.data.equipamentos.filter(e=>e.tipo!=="Corda"&&e.status!=="Descartado"&&e.status!=="Retirado de serviço").sort((a,b)=>byName(a,b,"tag"));modal(id?"Editar KIT":"Novo KIT",`<form id="kit-form"><div class="form-grid">${field("Código do KIT","codigo",x?.codigo||"",{required:true,placeholder:"KIT-AC-001"})}${field("Descrição","descricao",x?.descricao||"KIT de acesso por cordas")}${selectField("Status","status",["Disponível","Reservado","Em uso","Inativo"],x?.status||"Disponível")}</div><div class="section-separator"></div><label class="strong small">Componentes rastreáveis</label><div class="checkbox-list">${equipments.map(e=>`<label class="checkbox-item"><input type="checkbox" name="componentes" value="${e.id}" ${(x?.componentes||[]).includes(e.id)?"checked":""}><span><strong>${esc(e.tag)}</strong> — ${esc(e.equipamento)} <span class="muted">(${esc(e.status)})</span></span></label>`).join("")||`<div class="empty-state">Cadastre equipamentos antes de montar um KIT.</div>`}</div><div class="form-help">Cordas não aparecem aqui porque são alocadas separadamente.</div><div id="modal-msg"></div></form>`,{wide:true,footer:`<button class="secondary-button" data-close-modal>Cancelar</button><button class="module-primary-button" type="submit" form="kit-form">Salvar KIT</button>`});$("#kit-form").onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target),comps=fd.getAll("componentes");const f=Object.fromEntries(fd.entries());const dup=state.data.kits.find(y=>norm(y.codigo)===norm(f.codigo)&&y.id!==id);if(dup){$("#modal-msg").innerHTML=msgBox("Já existe KIT com este código.");return;}const p={codigo:f.codigo.trim().toUpperCase(),descricao:f.descricao.trim(),status:f.status,componentes:comps,atualizadoEm:serverTimestamp(),atualizadoPor:state.user.uid};try{id?await updateDoc(doc(db,"kits",id),p):await addDoc(collection(db,"kits"),{...p,criadoEm:serverTimestamp(),criadoPor:state.user.uid});await audit(id?"Atualização":"Cadastro","kit",id||"novo",p.codigo);closeModal();showToast("KIT salvo.");}catch(err){$("#modal-msg").innerHTML=msgBox("Erro ao salvar KIT: "+(err.code||""));}};}
+function kitDetail(id){const k=findBy("kits",id);if(!k)return;const comps=(k.componentes||[]).map(i=>findBy("equipamentos",i)).filter(Boolean);modal(`Componentes — ${k.codigo}`,`<div class="card-grid">${comps.map(e=>`<div class="mini-card"><h4>${esc(e.tag)}</h4><p>${esc(e.equipamento)}</p>${badge(e.status,statusType(e.status))}</div>`).join("")||`<div class="empty-state">KIT sem componentes.</div>`}</div>`,{wide:true,footer:`<button class="secondary-button" data-close-modal>Fechar</button>`});}
+
+function stockFor(epiId){return state.data.estoque_movimentacoes.filter(x=>x.epiId===epiId&&!x.cancelado).reduce((s,x)=>s+Number(x.quantidade||0),0);}
+function renderStock(){const rows=state.data.epis.filter(e=>e.ativo!==false).map(e=>({...e,saldo:stockFor(e.id)})).sort((a,b)=>byName(a,b,"nome"));ui.root.innerHTML=moduleHeader("ALMOXARIFADO SIMPLES","Estoque","Entradas e baixas de EPIs consumíveis ou individuais. Compras podem ser vinculadas à obra.",isMgmt()?`<button class="module-primary-button" data-action="stock-entry">+ Registrar entrada</button>`:"")+`<div class="card-grid">${rows.map(e=>`<div class="mini-card"><h4>${esc(e.nome)}</h4><span class="big">${e.saldo}</span><p>Saldo atual • mínimo ${Number(e.estoqueMinimo||0)}</p>${e.saldo<=Number(e.estoqueMinimo||0)?badge("Estoque baixo","warn"):badge("Estoque OK","active")}</div>`).join("")||`<div class="empty-state">Cadastre EPIs para controlar estoque.</div>`}</div><div class="section-separator"></div><div class="module-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Data</th><th>EPI</th><th>Movimento</th><th>Qtd.</th><th>Obra</th><th>Observação</th></tr></thead><tbody>${[...state.data.estoque_movimentacoes].sort((a,b)=>(b.criadoEm?.seconds||0)-(a.criadoEm?.seconds||0)).slice(0,100).map(x=>`<tr><td>${dateTimeBR(x.criadoEm)}</td><td>${esc(x.epiNome)}</td><td>${esc(x.tipo)}</td><td><strong>${Number(x.quantidade||0)>0?"+":""}${Number(x.quantidade||0)}</strong></td><td>${esc(x.obraNome||"—")}</td><td>${esc(x.observacao||"—")}</td></tr>`).join("")||`<tr><td colspan="6" class="empty-state">Sem movimentações de estoque.</td></tr>`}</tbody></table></div></div>`;}
+function openStockEntry(){const epis=state.data.epis.filter(e=>e.ativo!==false).sort((a,b)=>byName(a,b,"nome"));const works=state.data.obras.filter(o=>!["Encerrada","Cancelada"].includes(o.status)).sort((a,b)=>byName(a,b,"nome"));modal("Registrar entrada de estoque",`<form id="stock-form"><div class="form-grid">${selectField("EPI","epiId",[["","Selecione"],...epis.map(e=>[e.id,e.nome])],"",{required:true})}${field("Quantidade","quantidade","1",{type:"number",min:"1",step:"1",required:true})}${selectField("Obra / compra vinculada","obraId",[["","Sem vínculo"],...works.map(o=>[o.id,o.nome])])}${field("Documento / NF","documento","")}${textArea("Observação","observacao","")}</div><div id="modal-msg"></div></form>`,{footer:`<button class="secondary-button" data-close-modal>Cancelar</button><button class="module-primary-button" form="stock-form">Registrar entrada</button>`});$("#stock-form").onsubmit=async e=>{e.preventDefault();const f=formDataObj(e.target),epi=findBy("epis",f.epiId),obra=findBy("obras",f.obraId);try{await addDoc(collection(db,"estoque_movimentacoes"),{epiId:f.epiId,epiNome:epi?.nome||"",tipo:"Entrada",quantidade:Number(f.quantidade),obraId:f.obraId||"",obraNome:obra?.nome||"",documento:f.documento,observacao:f.observacao,criadoEm:serverTimestamp(),criadoPor:state.user.uid});await audit("Entrada","estoque",f.epiId,`${epi?.nome}: +${f.quantidade}`);closeModal();showToast("Entrada registrada.");}catch(err){$("#modal-msg").innerHTML=msgBox("Erro ao registrar entrada: "+(err.code||""));}};}
+
+function renderInspections(){const rows=[...state.data.inspecoes].sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));ui.root.innerHTML=moduleHeader("CONTROLE TÉCNICO","Inspeções","Registre inspeções de entrada, periódicas, extraordinárias e pós-uso.",isMgmt()?`<button class="module-primary-button" data-action="new-inspection">+ Nova inspeção</button>`:"")+`<div class="module-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Data</th><th>TAG</th><th>Equipamento</th><th>Tipo</th><th>Resultado</th><th>Próxima</th><th>Responsável</th><th>Ações</th></tr></thead><tbody>${rows.map(i=>`<tr><td>${esc(dateBR(i.data))}</td><td><strong>${esc(i.tag||"—")}</strong></td><td>${esc(i.equipamentoNome||"—")}</td><td>${esc(i.tipoInspecao||"—")}</td><td>${badge(i.resultado||"—",statusType(i.resultado))}</td><td>${esc(dateBR(i.proximaInspecao))}</td><td>${esc(i.responsavel||"—")}</td><td><button class="table-action-button" data-action="inspection-detail" data-id="${i.id}">Ver</button></td></tr>`).join("")||`<tr><td colspan="8" class="empty-state">Nenhuma inspeção registrada.</td></tr>`}</tbody></table></div></div>`;}
+function openInspection(equipmentId=""){const equipments=state.data.equipamentos.filter(e=>!["Descartado"].includes(e.status)).sort((a,b)=>byName(a,b,"tag"));modal("Registrar inspeção",`<form id="inspection-form"><div class="form-grid">${selectField("Equipamento / TAG","equipamentoId",[["","Selecione"],...equipments.map(e=>[e.id,`${e.tag} — ${e.equipamento}`])],equipmentId,{required:true})}${field("Data","data",new Date().toISOString().slice(0,10),{type:"date",required:true})}${selectField("Tipo de inspeção","tipoInspecao",["Entrada / cadastro","Pré-uso","Periódica","Pós-uso","Extraordinária"],"Periódica")}${selectField("Resultado","resultado",["Aprovado","Aprovado com observação","Reprovado"],"Aprovado")}${field("Próxima inspeção","proximaInspecao","",{type:"date"})}${field("Responsável","responsavel",state.profile?.nome||"")}${field("Evidência / referência","evidencia","")}${textArea("Serviço / inspeção realizada","servico","")}${textArea("Ação / manutenção","acaoManutencao","")}${textArea("Observações","observacoes","")}</div><div id="modal-msg"></div></form>`,{wide:true,footer:`<button class="secondary-button" data-close-modal>Cancelar</button><button class="module-primary-button" form="inspection-form">Salvar inspeção</button>`});$("#inspection-form").onsubmit=async e=>{e.preventDefault();const f=formDataObj(e.target),eq=findBy("equipamentos",f.equipamentoId);if(!eq)return;try{const ref=await addDoc(collection(db,"inspecoes"),{...f,tag:eq.tag,equipamentoNome:eq.equipamento,criadoEm:serverTimestamp(),criadoPor:state.user.uid});let status=eq.status;if(f.resultado==="Reprovado")status="Quarentena";else if(["Quarentena","Aguardando inspeção"].includes(eq.status)&&f.resultado.startsWith("Aprovado"))status="Disponível";if(status!==eq.status)await updateDoc(doc(db,"equipamentos",eq.id),{status,atualizadoEm:serverTimestamp(),atualizadoPor:state.user.uid});await audit("Inspeção","equipamento",eq.id,`${eq.tag} — ${f.resultado}`);closeModal();showToast("Inspeção registrada.");}catch(err){$("#modal-msg").innerHTML=msgBox("Erro ao registrar inspeção: "+(err.code||""));}};}
+function inspectionDetail(id){const i=findBy("inspecoes",id);if(!i)return;modal(`Inspeção — ${i.tag}`,`<div class="detail-grid"><div class="detail-item"><span>Data</span><strong>${esc(dateBR(i.data))}</strong></div><div class="detail-item"><span>Tipo</span><strong>${esc(i.tipoInspecao)}</strong></div><div class="detail-item"><span>Resultado</span><strong>${esc(i.resultado)}</strong></div><div class="detail-item"><span>Próxima inspeção</span><strong>${esc(dateBR(i.proximaInspecao))}</strong></div><div class="detail-item"><span>Responsável</span><strong>${esc(i.responsavel||"—")}</strong></div><div class="detail-item"><span>Evidência</span><strong>${esc(i.evidencia||"—")}</strong></div></div><div class="section-separator"></div><p><strong>Serviço / inspeção:</strong><br>${esc(i.servico||"—")}</p><p><strong>Ação / manutenção:</strong><br>${esc(i.acaoManutencao||"—")}</p><p><strong>Observações:</strong><br>${esc(i.observacoes||"—")}</p>`,{footer:`<button class="secondary-button" data-close-modal>Fechar</button>`});}
+
+function movementItemLabel(m){return m.itemDescricao||m.itemNome||m.tipoItem||"Item";}
+function renderMovements(){const r=norm(state.profile?.role);const ownOnly=r==="colaborador";const rows=[...state.data.movimentacoes].sort((a,b)=>(b.criadoEm?.seconds||0)-(a.criadoEm?.seconds||0));ui.root.innerHTML=moduleHeader("ENTREGAS E DEVOLUÇÕES","Movimentações",ownOnly?"Confira sua ficha, seus equipamentos e assine os recebimentos/devoluções pendentes.":"Registre entregas individuais, cessões de KITs, cordas e devoluções.",isMgmt()?`<button class="module-primary-button" data-action="new-movement">+ Nova movimentação</button>`:"")+`<div class="module-toolbar"><input class="search-input" id="movement-search" placeholder="Pesquisar colaborador, item ou obra"><div class="toolbar-spacer"></div><select id="movement-filter" class="filter-select"><option value="">Todas</option><option value="pendente">Pendentes</option><option value="assinado">Assinadas</option><option value="cancelado">Canceladas</option></select></div><div class="module-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Data</th><th>Colaborador</th><th>Item</th><th>Obra</th><th>Movimento</th><th>Assinatura</th><th>Estado</th><th>Ações</th></tr></thead><tbody id="movement-body"></tbody></table></div></div>`;const paint=()=>{const q=$("#movement-search").value.toLowerCase(),f=$("#movement-filter").value;$("#movement-body").innerHTML=rows.filter(m=>(!q||[m.colaboradorNome,m.itemDescricao,m.obraNome,m.movimento].join(" ").toLowerCase().includes(q))&&(!f||m.statusAssinatura===f)).map(m=>`<tr><td>${dateTimeBR(m.criadoEm)}</td><td>${esc(m.colaboradorNome||"—")}</td><td><strong>${esc(movementItemLabel(m))}</strong><br><span class="muted small">${esc(m.caTagSerie||"")}</span></td><td>${esc(m.obraNome||"—")}</td><td>${esc(m.movimento||"—")}</td><td>${badge(m.statusAssinatura||"—",statusType(m.statusAssinatura))}</td><td>${badge(m.estado||"—",statusType(m.estado))}</td><td><button class="table-action-button" data-action="movement-detail" data-id="${m.id}">Ver</button>${m.statusAssinatura==="pendente"&&m.colaboradorId===ownCollabId()?`<button class="table-action-button" data-action="sign-movement" data-id="${m.id}">Assinar</button>`:""}${isMgmt()&&m.statusAssinatura==="pendente"?`<button class="table-action-button danger" data-action="cancel-movement" data-id="${m.id}">Cancelar</button>`:""}${isMgmt()&&m.statusAssinatura==="assinado"&&["em_posse","consumido"].includes(m.estado)&&m.tipoItem!=="epi"?`<button class="table-action-button" data-action="return-movement" data-id="${m.id}">Devolver</button>`:""}</td></tr>`).join("")||`<tr><td colspan="8" class="empty-state">Nenhuma movimentação encontrada.</td></tr>`};paint();$("#movement-search").oninput=paint;$("#movement-filter").onchange=paint;}
+function openMovement(){const collabs=state.data.colaboradores.filter(c=>c.ativo!==false).sort((a,b)=>byName(a,b,"nomeCompleto"));const works=state.data.obras.filter(o=>!["Encerrada","Cancelada"].includes(o.status)).sort((a,b)=>byName(a,b,"nome"));modal("Nova movimentação",`<form id="movement-form"><div class="form-grid">${selectField("Colaborador","colaboradorId",[["","Selecione"],...collabs.map(c=>[c.id,c.nomeCompleto])],"",{required:true})}${selectField("Obra","obraId",[["","Sem obra"],...works.map(o=>[o.id,o.nome])])}${selectField("Tipo de item","tipoItem",[["epi","EPI / uniforme"],["kit","KIT de acesso por cordas"],["equipamento","Equipamento / corda avulsa"]],"epi")}${selectField("Item","itemId",[["","Selecione"]],"",{required:true})}${field("Quantidade","quantidade","1",{type:"number",min:"1",step:"1",required:true})}${selectField("Movimento","movimento",["Entrega","Troca","Cessão temporária"],"Entrega")}${field("Motivo / condição","motivoCondicao","Entrega para uso")}</div><div id="movement-help" class="form-help"></div><div id="modal-msg"></div></form>`,{wide:true,footer:`<button class="secondary-button" data-close-modal>Cancelar</button><button class="module-primary-button" form="movement-form">Gerar para assinatura</button>`});const type=$("#tipoItem"),item=$("#itemId"),qty=$("#quantidade");const populate=()=>{let arr=[];if(type.value==="epi")arr=state.data.epis.filter(x=>x.ativo!==false).map(x=>[x.id,`${x.nome} — estoque ${stockFor(x.id)}`]);if(type.value==="kit")arr=state.data.kits.filter(x=>x.status==="Disponível").map(x=>[x.id,`${x.codigo} — ${x.descricao||"KIT"}`]);if(type.value==="equipamento")arr=state.data.equipamentos.filter(x=>x.status==="Disponível").map(x=>[x.id,`${x.tag} — ${x.equipamento}`]);item.innerHTML='<option value="">Selecione</option>'+arr.map(([v,l])=>`<option value="${v}">${esc(l)}</option>`).join("");qty.disabled=type.value!=="epi";if(type.value!=="epi")qty.value="1";$("#movement-help").textContent=type.value==="kit"?"Uma única assinatura confirma o recebimento do KIT e de seus componentes rastreáveis.":type.value==="equipamento"?"Cordas são selecionadas aqui individualmente, fora dos KITs.":"O estoque será baixado ao gerar a entrega; cancelamentos restauram a quantidade.";};populate();type.onchange=populate;$("#movement-form").onsubmit=async e=>{e.preventDefault();const f=formDataObj(e.target);try{await createMovement(f);closeModal();showToast("Movimentação criada e enviada para assinatura.");}catch(err){console.error(err);$("#modal-msg").innerHTML=msgBox(err.message||"Não foi possível criar a movimentação.");}};}
+async function createMovement(f,{mobilizacaoId=""}={}){const c=findBy("colaboradores",f.colaboradorId),o=findBy("obras",f.obraId);if(!c)throw new Error("Selecione o colaborador.");let itemDesc="",caTagSerie="",snapshot=[];const qty=Number(f.quantidade||1);if(f.tipoItem==="epi"){const e=findBy("epis",f.itemId);if(!e)throw new Error("Selecione o EPI.");if(stockFor(e.id)<qty)throw new Error(`Estoque insuficiente de ${e.nome}.`);itemDesc=e.nome;caTagSerie=e.ca||"";}else if(f.tipoItem==="kit"){const k=findBy("kits",f.itemId);if(!k||k.status!=="Disponível")throw new Error("KIT indisponível.");itemDesc=k.codigo;snapshot=(k.componentes||[]).map(id=>{const e=findBy("equipamentos",id);return e?{id:e.id,tag:e.tag,equipamento:e.equipamento,serie:e.numeroSerie||"",status:e.status}:null}).filter(Boolean);if(snapshot.some(c=>c.status!=="Disponível"))throw new Error("O KIT possui componente indisponível. Verifique a composição antes de entregar.");caTagSerie=k.codigo;}else{const eq=findBy("equipamentos",f.itemId);if(!eq||eq.status!=="Disponível")throw new Error("Equipamento indisponível.");itemDesc=`${eq.tag} — ${eq.equipamento}`;caTagSerie=[eq.tag,eq.numeroSerie].filter(Boolean).join(" / ");}
+ const batch=writeBatch(db),ref=doc(collection(db,"movimentacoes"));batch.set(ref,{colaboradorId:c.id,colaboradorNome:c.nomeCompleto,obraId:o?.id||"",obraNome:o?.nome||"",tipoItem:f.tipoItem,itemId:f.itemId,itemDescricao:itemDesc,caTagSerie,quantidade:qty,movimento:f.movimento||"Entrega",motivoCondicao:f.motivoCondicao||"",statusAssinatura:"pendente",estado:"aguardando_assinatura",assinaturaTipo:"recebimento",componentesSnapshot:snapshot,mobilizacaoId,criadoEm:serverTimestamp(),criadoPor:state.user.uid});if(f.tipoItem==="epi"){const e=findBy("epis",f.itemId),sr=doc(collection(db,"estoque_movimentacoes"));batch.set(sr,{epiId:e.id,epiNome:e.nome,tipo:"Saída por entrega",quantidade:-qty,obraId:o?.id||"",obraNome:o?.nome||"",movimentacaoId:ref.id,observacao:`${c.nomeCompleto} — ${f.movimento||"Entrega"}`,criadoEm:serverTimestamp(),criadoPor:state.user.uid});}else if(f.tipoItem==="kit"){batch.update(doc(db,"kits",f.itemId),{status:"Reservado",responsavelColaboradorId:c.id,responsavelNome:c.nomeCompleto,atualizadoEm:serverTimestamp(),atualizadoPor:state.user.uid});for(const comp of snapshot)batch.update(doc(db,"equipamentos",comp.id),{status:"Reservado",responsavelColaboradorId:c.id,responsavelNome:c.nomeCompleto,atualizadoEm:serverTimestamp(),atualizadoPor:state.user.uid});}else batch.update(doc(db,"equipamentos",f.itemId),{status:"Reservado",responsavelColaboradorId:c.id,responsavelNome:c.nomeCompleto,atualizadoEm:serverTimestamp(),atualizadoPor:state.user.uid});await batch.commit();await audit("Movimentação criada","movimentacao",ref.id,`${c.nomeCompleto} — ${itemDesc}`);return ref.id;}
+function movementDetail(id){const m=findBy("movimentacoes",id);if(!m)return;modal(`Movimentação — ${movementItemLabel(m)}`,`<div class="detail-grid"><div class="detail-item"><span>Colaborador</span><strong>${esc(m.colaboradorNome)}</strong></div><div class="detail-item"><span>Obra</span><strong>${esc(m.obraNome||"—")}</strong></div><div class="detail-item"><span>Movimento</span><strong>${esc(m.movimento)}</strong></div><div class="detail-item"><span>Item</span><strong>${esc(m.itemDescricao)}</strong></div><div class="detail-item"><span>CA / TAG / série</span><strong>${esc(m.caTagSerie||"—")}</strong></div><div class="detail-item"><span>Quantidade</span><strong>${Number(m.quantidade||1)}</strong></div><div class="detail-item"><span>Assinatura</span><strong>${esc(m.statusAssinatura)}</strong></div><div class="detail-item"><span>Data assinatura</span><strong>${dateTimeBR(m.assinadoEm)}</strong></div><div class="detail-item"><span>Estado</span><strong>${esc(m.estado)}</strong></div></div><div class="section-separator"></div><p><strong>Motivo / condição:</strong> ${esc(m.motivoCondicao||"—")}</p>${(m.componentesSnapshot||[]).length?`<h4>Componentes do KIT na entrega</h4><div>${m.componentesSnapshot.map(c=>`<span class="tag">${esc(c.tag)} — ${esc(c.equipamento)}</span>`).join("")}</div>`:""}${m.assinaturaBase64?`<div class="section-separator"></div><p class="small muted">Assinado eletronicamente por ${esc(m.assinadoPorNome||m.colaboradorNome)} em ${dateTimeBR(m.assinadoEm)}.</p><img src="${m.assinaturaBase64}" alt="Assinatura" style="max-width:320px;max-height:120px;border:1px solid #ddd;border-radius:8px">`:""}`,{wide:true,footer:`<button class="secondary-button" data-close-modal>Fechar</button>`});}
+
+function openSignature(id){const m=findBy("movimentacoes",id);if(!m||m.statusAssinatura!=="pendente"||m.colaboradorId!==ownCollabId())return;modal(`Assinar ${m.assinaturaTipo==="devolucao"?"devolução":"recebimento"}`,`<div class="notice-box"><strong>${esc(m.itemDescricao)}</strong><span>${esc(m.movimento)} • ${esc(m.obraNome||"Sem obra")} • ${esc(m.caTagSerie||"")}</span></div><p class="small muted">Declaro que conferi a movimentação acima e confirmo eletronicamente o ${m.assinaturaTipo==="devolucao"?"registro de devolução":"recebimento do item em condição adequada de uso, com as orientações necessárias sobre utilização, guarda, conservação e comunicação de defeitos"}.</p><div class="signature-wrap"><canvas id="signature-canvas" class="signature-canvas" width="760" height="220"></canvas></div><div class="signature-tools"><span class="muted small">Assine com o mouse, caneta ou toque.</span><button class="secondary-button" type="button" id="clear-signature">Limpar</button></div><div id="modal-msg"></div>`,{wide:true,footer:`<button class="secondary-button" data-close-modal>Cancelar</button><button class="module-primary-button" id="confirm-signature">Confirmar assinatura</button>`});const canvas=$("#signature-canvas"),ctx=canvas.getContext("2d");ctx.lineWidth=2.2;ctx.lineCap="round";ctx.strokeStyle="#0b3768";let drawing=false,dirty=false;const pos=e=>{const r=canvas.getBoundingClientRect(),p=e.touches?.[0]||e;return{x:(p.clientX-r.left)*(canvas.width/r.width),y:(p.clientY-r.top)*(canvas.height/r.height)}};const start=e=>{drawing=true;dirty=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);e.preventDefault()};const move=e=>{if(!drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();e.preventDefault()};const end=e=>{drawing=false;e?.preventDefault?.()};["pointerdown"].forEach(ev=>canvas.addEventListener(ev,start));["pointermove"].forEach(ev=>canvas.addEventListener(ev,move));["pointerup","pointerleave"].forEach(ev=>canvas.addEventListener(ev,end));$("#clear-signature").onclick=()=>{ctx.clearRect(0,0,canvas.width,canvas.height);dirty=false};$("#confirm-signature").onclick=async()=>{if(!dirty){$("#modal-msg").innerHTML=msgBox("Faça sua assinatura antes de confirmar.");return;}const sig=canvas.toDataURL("image/png");try{await finalizeSignature(m,sig);closeModal();showToast("Assinatura registrada com sucesso.");}catch(err){console.error(err);$("#modal-msg").innerHTML=msgBox("Não foi possível registrar a assinatura: "+(err.code||err.message||""));}};}
+async function finalizeSignature(m,sig){const batch=writeBatch(db);const ref=doc(db,"movimentacoes",m.id);const base={statusAssinatura:"assinado",assinaturaBase64:sig,assinadoEm:serverTimestamp(),assinadoPor:state.user.uid,assinadoPorNome:state.profile?.nome||m.colaboradorNome};if(m.assinaturaTipo==="devolucao"){batch.update(ref,{...base,estado:"devolvido"});if(m.movimentacaoOrigemId)batch.update(doc(db,"movimentacoes",m.movimentacaoOrigemId),{estado:"devolvido",devolvidoEm:serverTimestamp()});if(m.tipoItem==="kit"){batch.update(doc(db,"kits",m.itemId),{status:"Disponível",responsavelColaboradorId:"",responsavelNome:"",atualizadoEm:serverTimestamp()});for(const c of m.componentesSnapshot||[])batch.update(doc(db,"equipamentos",c.id),{status:"Aguardando inspeção",responsavelColaboradorId:"",responsavelNome:"",atualizadoEm:serverTimestamp()});}else if(m.tipoItem==="equipamento")batch.update(doc(db,"equipamentos",m.itemId),{status:"Aguardando inspeção",responsavelColaboradorId:"",responsavelNome:"",atualizadoEm:serverTimestamp()});}else{let estado="em_posse";if(m.tipoItem==="epi"){const e=findBy("epis",m.itemId);if(e?.tipoControle==="Consumo")estado="consumido";}batch.update(ref,{...base,estado});if(m.tipoItem==="kit"){batch.update(doc(db,"kits",m.itemId),{status:"Em uso",responsavelColaboradorId:m.colaboradorId,responsavelNome:m.colaboradorNome,atualizadoEm:serverTimestamp()});for(const c of m.componentesSnapshot||[])batch.update(doc(db,"equipamentos",c.id),{status:"Em uso",responsavelColaboradorId:m.colaboradorId,responsavelNome:m.colaboradorNome,atualizadoEm:serverTimestamp()});}else if(m.tipoItem==="equipamento")batch.update(doc(db,"equipamentos",m.itemId),{status:"Em uso",responsavelColaboradorId:m.colaboradorId,responsavelNome:m.colaboradorNome,atualizadoEm:serverTimestamp()});}await batch.commit();await audit("Assinatura", "movimentacao",m.id,`${m.colaboradorNome} — ${m.itemDescricao}`);}
+async function cancelMovement(id){const m=findBy("movimentacoes",id);if(!m||m.statusAssinatura!=="pendente")return;if(!confirm(`Cancelar a movimentação de ${m.itemDescricao}?`))return;const batch=writeBatch(db);batch.update(doc(db,"movimentacoes",id),{statusAssinatura:"cancelado",estado:"cancelado",canceladoEm:serverTimestamp(),canceladoPor:state.user.uid});if(m.assinaturaTipo!=="devolucao"){if(m.tipoItem==="epi"){const e=findBy("epis",m.itemId),r=doc(collection(db,"estoque_movimentacoes"));batch.set(r,{epiId:m.itemId,epiNome:e?.nome||m.itemDescricao,tipo:"Estorno de cancelamento",quantidade:Number(m.quantidade||1),obraId:m.obraId||"",obraNome:m.obraNome||"",movimentacaoId:id,observacao:`Cancelamento — ${m.colaboradorNome}`,criadoEm:serverTimestamp(),criadoPor:state.user.uid});}else if(m.tipoItem==="kit"){batch.update(doc(db,"kits",m.itemId),{status:"Disponível",responsavelColaboradorId:"",responsavelNome:"",atualizadoEm:serverTimestamp()});for(const c of m.componentesSnapshot||[])batch.update(doc(db,"equipamentos",c.id),{status:"Disponível",responsavelColaboradorId:"",responsavelNome:"",atualizadoEm:serverTimestamp()});}else batch.update(doc(db,"equipamentos",m.itemId),{status:"Disponível",responsavelColaboradorId:"",responsavelNome:"",atualizadoEm:serverTimestamp()});}await batch.commit();await audit("Cancelamento","movimentacao",id,m.itemDescricao);showToast("Movimentação cancelada.");}
+async function createReturn(origin){if(origin.tipoItem==="epi")return;const ref=await addDoc(collection(db,"movimentacoes"),{colaboradorId:origin.colaboradorId,colaboradorNome:origin.colaboradorNome,obraId:origin.obraId||"",obraNome:origin.obraNome||"",tipoItem:origin.tipoItem,itemId:origin.itemId,itemDescricao:origin.itemDescricao,caTagSerie:origin.caTagSerie||"",quantidade:origin.quantidade||1,movimento:"Devolução",motivoCondicao:"Devolução / desmobilização",statusAssinatura:"pendente",estado:"aguardando_assinatura",assinaturaTipo:"devolucao",movimentacaoOrigemId:origin.id,componentesSnapshot:origin.componentesSnapshot||[],criadoEm:serverTimestamp(),criadoPor:state.user.uid});await audit("Devolução criada","movimentacao",ref.id,origin.itemDescricao);showToast("Devolução enviada para assinatura.");}
+
+function openMobilize(workId){const work=findBy("obras",workId);if(!work)return;const collabs=state.data.colaboradores.filter(c=>c.ativo!==false).sort((a,b)=>byName(a,b,"nomeCompleto"));const epis=state.data.epis.filter(e=>e.ativo!==false).sort((a,b)=>byName(a,b,"nome"));const kits=state.data.kits.filter(k=>k.status==="Disponível").sort((a,b)=>byName(a,b,"codigo"));const cords=state.data.equipamentos.filter(e=>e.tipo==="Corda"&&e.status==="Disponível").sort((a,b)=>byName(a,b,"tag"));modal(`Mobilizar — ${work.nome}`,`<form id="mobilize-form"><div class="form-grid">${selectField("Colaborador","colaboradorId",[["","Selecione"],...collabs.map(c=>[c.id,c.nomeCompleto])],"",{required:true})}${selectField("KIT","kitId",[["","Sem KIT"],...kits.map(k=>[k.id,`${k.codigo} — ${k.descricao||"KIT"}`])])}</div><div class="section-separator"></div><div class="two-column"><div><label class="strong small">EPIs para esta obra</label><div class="checkbox-list">${epis.map(e=>`<label class="checkbox-item"><input type="checkbox" name="epis" value="${e.id}"><span>${esc(e.nome)} <span class="muted">(saldo ${stockFor(e.id)})</span></span></label>`).join("")||"<div class='empty-state'>Sem EPIs</div>"}</div><div class="form-help">Cada EPI selecionado será lançado com quantidade 1. Quantidades adicionais podem ser feitas em Movimentações.</div></div><div><label class="strong small">Cordas avulsas</label><div class="checkbox-list">${cords.map(e=>`<label class="checkbox-item"><input type="checkbox" name="cordas" value="${e.id}"><span><strong>${esc(e.tag)}</strong> — ${esc(e.equipamento)} ${e.comprimentoAtual?`(${e.comprimentoAtual} m)`:""}</span></label>`).join("")||"<div class='empty-state'>Sem cordas disponíveis</div>"}</div></div></div><div id="modal-msg"></div></form>`,{wide:true,footer:`<button class="secondary-button" data-close-modal>Cancelar</button><button class="module-primary-button" form="mobilize-form">Gerar mobilização</button>`});$("#mobilize-form").onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target),cid=fd.get("colaboradorId"),kitId=fd.get("kitId"),epiIds=fd.getAll("epis"),cordIds=fd.getAll("cordas");if(!cid){$("#modal-msg").innerHTML=msgBox("Selecione o colaborador.");return;}if(!kitId&&!epiIds.length&&!cordIds.length){$("#modal-msg").innerHTML=msgBox("Selecione ao menos um EPI, KIT ou corda.");return;}try{const mobRef=await addDoc(collection(db,"mobilizacoes"),{obraId:work.id,obraNome:work.nome,colaboradorId:cid,colaboradorNome:findBy("colaboradores",cid)?.nomeCompleto||"",status:"Aguardando assinaturas",criadoEm:serverTimestamp(),criadoPor:state.user.uid});for(const eid of epiIds)await createMovement({colaboradorId:cid,obraId:work.id,tipoItem:"epi",itemId:eid,quantidade:1,movimento:"Entrega",motivoCondicao:"Entrega para mobilização da obra"},{mobilizacaoId:mobRef.id});if(kitId)await createMovement({colaboradorId:cid,obraId:work.id,tipoItem:"kit",itemId:kitId,quantidade:1,movimento:"Cessão temporária",motivoCondicao:"Cessão durante a obra"},{mobilizacaoId:mobRef.id});for(const eid of cordIds)await createMovement({colaboradorId:cid,obraId:work.id,tipoItem:"equipamento",itemId:eid,quantidade:1,movimento:"Cessão temporária",motivoCondicao:"Corda alocada à obra"},{mobilizacaoId:mobRef.id});if(work.status==="Planejada")await updateDoc(doc(db,"obras",work.id),{status:"Em andamento",atualizadoEm:serverTimestamp()});await audit("Mobilização","obra",work.id,findBy("colaboradores",cid)?.nomeCompleto||"");closeModal();showToast("Mobilização criada. Aguarde as assinaturas.");}catch(err){console.error(err);$("#modal-msg").innerHTML=msgBox(err.message||"Erro ao mobilizar.");}};}
+function openDemobilize(workId){const work=findBy("obras",workId);const active=state.data.movimentacoes.filter(m=>m.obraId===workId&&m.statusAssinatura==="assinado"&&m.estado==="em_posse"&&["kit","equipamento"].includes(m.tipoItem));modal(`Desmobilizar — ${work?.nome||"Obra"}`,`<p class="muted small">Serão geradas devoluções para KITs e equipamentos/cordas ainda em posse dos colaboradores. As devoluções só serão concluídas após assinatura.</p><div class="checkbox-list">${active.map(m=>`<label class="checkbox-item"><input type="checkbox" name="returns" value="${m.id}" checked><span>${esc(m.colaboradorNome)} — <strong>${esc(m.itemDescricao)}</strong></span></label>`).join("")||`<div class="empty-state">Não há KITs ou equipamentos aguardando devolução.</div>`}</div><div id="modal-msg"></div>`,{wide:true,footer:`<button class="secondary-button" data-close-modal>Fechar</button>${active.length?`<button class="module-primary-button" id="confirm-demob">Gerar devoluções</button>`:""}`});if(active.length)$("#confirm-demob").onclick=async()=>{const ids=[...ui.modalHost.querySelectorAll('input[name="returns"]:checked')].map(x=>x.value);if(!ids.length)return;try{for(const id of ids)await createReturn(findBy("movimentacoes",id));await audit("Desmobilização iniciada","obra",workId,`${ids.length} devolução(ões)`);closeModal();showToast("Devoluções geradas para assinatura.");}catch(err){$("#modal-msg").innerHTML=msgBox("Erro na desmobilização: "+(err.code||err.message||""));}};}
+
+function renderReports(){const collabs=state.data.colaboradores.filter(c=>c.ativo!==false).sort((a,b)=>byName(a,b,"nomeCompleto"));const works=state.data.obras.sort((a,b)=>byName(a,b,"nome"));const equipments=state.data.equipamentos.sort((a,b)=>byName(a,b,"tag"));const selected=norm(state.profile?.role)==="colaborador"?ownCollabId():"";ui.root.innerHTML=moduleHeader("DOCUMENTOS","Relatórios e fichas","Gere documentos corporativos em PDF com cabeçalho e rodapé da Safety Equipamentos.")+`<div class="two-column"><article class="section-card"><span class="eyebrow">SE-FRM-SST-004</span><h3>Ficha de EPI do colaborador</h3><p class="muted small">Histórico completo ou recorte dos itens destinados a uma obra.</p><div class="form-grid">${selectField("Colaborador","report-collab",collabs.map(c=>[c.id,c.nomeCompleto]),selected,{disabled:norm(state.profile?.role)==="colaborador"})}${selectField("Obra (opcional)","report-work",[["","Ficha completa"],...works.map(o=>[o.id,o.nome])])}</div><div class="action-row"><button class="module-primary-button" data-action="pdf-epi">Gerar PDF</button></div></article><article class="section-card"><span class="eyebrow">SE-FRM-AC-002</span><h3>Rastreabilidade de equipamento</h3><p class="muted small">Cadastro, aquisição, uso, inspeção, manutenção, quarentena e descarte.</p><div class="form-grid">${selectField("Equipamento / TAG","report-equipment",equipments.map(e=>[e.id,`${e.tag} — ${e.equipamento}`]))}</div><div class="action-row"><button class="module-primary-button" data-action="pdf-trace">Gerar PDF</button></div></article></div><div class="section-separator"></div><article class="section-card"><span class="eyebrow">RESUMO OPERACIONAL</span><h3>Ficha da obra</h3><p class="muted small">Gera uma relação consolidada dos colaboradores e itens em uso na obra selecionada.</p><div class="form-grid">${selectField("Obra","report-work-summary",works.map(o=>[o.id,o.nome]))}</div><div class="action-row"><button class="module-primary-button" data-action="pdf-work">Gerar PDF da obra</button></div></article>`;}
+function pdfLib(){if(!window.jspdf?.jsPDF)throw new Error("Biblioteca de PDF não carregou. Atualize a página e tente novamente.");return window.jspdf.jsPDF;}
+async function logoData(){try{const img=new Image();img.crossOrigin="anonymous";img.src="./assets/logo-safety.png";await new Promise((res,rej)=>{img.onload=res;img.onerror=rej});const c=document.createElement("canvas");c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext("2d").drawImage(img,0,0);return c.toDataURL("image/png");}catch{return null;}}
+function pdfHeader(doc,title,code,page){doc.setTextColor(7,59,115);doc.setFont("helvetica","bold");doc.setFontSize(13);doc.text("SAFETY EQUIPAMENTOS",200,14,{align:"right"});doc.setFont("helvetica","normal");doc.setFontSize(7);doc.setTextColor(90);doc.text("atendimento@safetyequipamentos.com | (21) 2756-5524 | WhatsApp (21) 99532-0709",200,19,{align:"right"});doc.text("www.safetyequipamentos.com | CNPJ 22.015.773/0001-84",200,23,{align:"right"});doc.setDrawColor(7,59,115);doc.setLineWidth(1.8);doc.line(12,29,160,29);doc.setDrawColor(212,160,23);doc.line(160,29,200,29);doc.setFontSize(7);doc.setTextColor(110);doc.text("Rua José de Queiroz, 196 - Bento Ribeiro - Rio de Janeiro/RJ",12,290);doc.text(`${code} | REV. 00`,105,290,{align:"center"});doc.text(`PÁG. ${page}`,200,290,{align:"right"});doc.setFontSize(15);doc.setTextColor(7,59,115);doc.setFont("helvetica","bold");doc.text(title,12,40);}
+function addPdfFooters(doc,title,code){const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);pdfHeader(doc,title,code,i);}}
+async function generateEpiPdf(collabId,workId=""){const c=findBy("colaboradores",collabId);if(!c)throw new Error("Selecione o colaborador.");const work=findBy("obras",workId);let ms=state.data.movimentacoes.filter(m=>m.colaboradorId===collabId&&m.statusAssinatura!=="cancelado");if(workId){ms=ms.filter(m=>m.obraId===workId&&m.statusAssinatura==="assinado"&&(m.tipoItem==="epi"||m.estado==="em_posse"));}ms.sort((a,b)=>(a.criadoEm?.seconds||0)-(b.criadoEm?.seconds||0));const J=pdfLib(),doc=new J({unit:"mm",format:"a4"});doc.setFont("helvetica","normal");doc.setTextColor(20);doc.setFontSize(8);doc.text(workId?`RECORTE OPERACIONAL POR OBRA: ${work?.nome||""}`:"FORMULÁRIO CORPORATIVO DE SST",12,48);doc.setFontSize(10);doc.setFont("helvetica","bold");doc.text("1. IDENTIFICAÇÃO DO EMPREGADO",12,56);doc.autoTable({startY:60,theme:"grid",styles:{fontSize:8,cellPadding:2},head:[['Nome completo','Matrícula/cadastro','Cargo/função']],body:[[c.nomeCompleto,c.matricula||'',c.cargoFuncao||''],['Setor/contrato',c.setorContrato||'',`Admissão: ${dateBR(c.dataAdmissao)}`]],margin:{left:12,right:10}});let y=doc.lastAutoTable.finalY+7;doc.setFont("helvetica","bold");doc.setFontSize(10);doc.text("2. CIÊNCIA E RESPONSABILIDADES",12,y);doc.setFont("helvetica","normal");doc.setFontSize(7.5);const resp="Declaro que recebi gratuitamente os itens registrados nesta ficha, em condição adequada de uso, acompanhados das orientações necessárias sobre ajuste, utilização, limitações, higienização, guarda, conservação e comunicação de defeitos. Devo utilizar o EPI para a finalidade prevista, inspecionar antes do uso, comunicar danos ou alterações e devolver os itens sujeitos a controle quando solicitado.";doc.text(doc.splitTextToSize(resp,186),12,y+5);y+=25;doc.setFont("helvetica","bold");doc.setFontSize(10);doc.text("3. MOVIMENTAÇÃO DE EPI E UNIFORMES",12,y);doc.autoTable({startY:y+4,theme:"grid",styles:{fontSize:6.7,cellPadding:1.5},head:[['DATA','QTD.','EPI / UNIFORME / EQUIPAMENTO','CA / TAG / SÉRIE','MOVIMENTO','MOTIVO / CONDIÇÃO','ASSINATURA']],body:ms.map(m=>[dateBR(m.criadoEm),String(m.quantidade||1),m.itemDescricao||'',m.caTagSerie||'',m.movimento||'',m.motivoCondicao||'',m.statusAssinatura==="assinado"?`Eletrônica ${dateTimeBR(m.assinadoEm)}`:'Pendente']),margin:{left:12,right:10}});y=doc.lastAutoTable.finalY+7;if(y>250){doc.addPage();y=47;}doc.setFont("helvetica","bold");doc.setFontSize(10);doc.text("4. DECLARAÇÃO FINAL",12,y);doc.setFont("helvetica","normal");doc.setFontSize(7.5);doc.text(doc.splitTextToSize("Confirmo que as informações registradas nesta ficha correspondem às movimentações realizadas. Estou ciente de que devo cumprir as orientações de SST, comunicar qualquer condição insegura e devolver os itens sujeitos a controle quando solicitado.",186),12,y+5);const signed=ms.filter(m=>m.assinaturaBase64);if(signed.length){y+=22;doc.setFont("helvetica","bold");doc.text("REGISTROS DE ASSINATURA ELETRÔNICA",12,y);for(const m of signed.slice(-4)){if(y>255){doc.addPage();y=48;}y+=5;doc.setFont("helvetica","normal");doc.setFontSize(7);doc.text(`${m.itemDescricao} — ${dateTimeBR(m.assinadoEm)} — ${m.assinadoPorNome||c.nomeCompleto}`,12,y);try{doc.addImage(m.assinaturaBase64,"PNG",14,y+2,48,14);y+=18;}catch{y+=4;}}}addPdfFooters(doc,workId?"FICHA DE EPI — OBRA":"FICHA DE ENTREGA, RECEBIMENTO E CONTROLE DE EPI E UNIFORMES","SE-FRM-SST-004");doc.save(`Ficha_EPI_${c.nomeCompleto.replace(/\s+/g,"_")}${workId?`_${work?.nome?.replace(/\s+/g,"_")}`:""}.pdf`);await audit("PDF gerado","relatorio",collabId,workId?`Ficha de obra ${work?.nome}`:"Ficha completa");}
+async function generateTracePdf(id){const e=findBy("equipamentos",id);if(!e)throw new Error("Selecione o equipamento.");const inspections=state.data.inspecoes.filter(i=>i.equipamentoId===id);const direct=state.data.movimentacoes.filter(m=>m.tipoItem==="equipamento"&&m.itemId===id);const kit=state.data.movimentacoes.filter(m=>m.tipoItem==="kit"&&(m.componentesSnapshot||[]).some(c=>c.id===id));const history=[...inspections.map(i=>({data:i.data,evento:"Inspeção",local:"",servico:i.tipoInspecao,resultado:i.resultado,acao:i.acaoManutencao,proxima:i.proximaInspecao,responsavel:i.responsavel,evidencia:i.evidencia||i.observacoes})),...direct.map(m=>({data:m.criadoEm,evento:m.movimento,local:m.obraNome,servico:`Responsável: ${m.colaboradorNome}`,resultado:m.statusAssinatura,acao:m.estado,proxima:"",responsavel:m.assinadoPorNome||"",evidencia:m.motivoCondicao})),...kit.map(m=>({data:m.criadoEm,evento:`KIT ${m.itemDescricao}`,local:m.obraNome,servico:`Responsável: ${m.colaboradorNome}`,resultado:m.statusAssinatura,acao:m.estado,proxima:"",responsavel:m.assinadoPorNome||"",evidencia:"Componente de KIT"}))].sort((a,b)=>{const da=a.data?.toDate?a.data.toDate():new Date(a.data||0),dbb=b.data?.toDate?b.data.toDate():new Date(b.data||0);return da-dbb;});const J=pdfLib(),doc=new J({unit:"mm",format:"a4"});doc.setFontSize(8);doc.setTextColor(30);doc.autoTable({startY:48,theme:"grid",styles:{fontSize:7,cellPadding:2},body:[['Equipamento',e.equipamento,'TAG',e.tag],['Fabricante',e.fabricante||'','Modelo',e.modelo||''],['Nº de série',e.numeroSerie||'','Lote / fabricação',e.loteFabricacao||''],['Data de compra',dateBR(e.dataCompra),'Nota fiscal',e.notaFiscal||''],['Vida útil / validade',e.vidaUtilValidade||'','Status atual',e.status||''],['Norma / certificação',e.normaCertificacao||'','Tipo',e.tipo||'Equipamento']],margin:{left:12,right:10}});let y=doc.lastAutoTable.finalY+8;doc.setFont("helvetica","bold");doc.setFontSize(10);doc.text("HISTÓRICO DO EQUIPAMENTO",12,y);doc.autoTable({startY:y+4,theme:"grid",styles:{fontSize:5.7,cellPadding:1.3},head:[['DATA','EVENTO','PROJETO / LOCAL','SERVIÇO / INSPEÇÃO','RESULTADO','AÇÃO / MANUTENÇÃO','PRÓXIMA INSPEÇÃO','RESPONSÁVEL','EVIDÊNCIA / OBS.']],body:history.map(h=>[dateBR(h.data),h.evento||'',h.local||'',h.servico||'',h.resultado||'',h.acao||'',dateBR(h.proxima),h.responsavel||'',h.evidencia||'']),margin:{left:8,right:8}});const yy=Math.min(doc.lastAutoTable.finalY+6,275);if(yy<275){doc.setFontSize(6.4);doc.setTextColor(80);doc.text(doc.splitTextToSize("CRITÉRIO: equipamento ou corda com defeito, desgaste, degradação, deformação, contaminação, alteração, impacto, rastreabilidade insuficiente ou histórico desconhecido deve ser retirado de uso, identificado e tratado conforme fabricante, NR-35 e procedimento interno.",190),10,yy);}addPdfFooters(doc,"RASTREABILIDADE DE EQUIPAMENTO DE ACESSO POR CORDAS","SE-FRM-AC-002");doc.save(`Rastreabilidade_${e.tag}.pdf`);await audit("PDF gerado","equipamento",e.id,`Rastreabilidade ${e.tag}`);}
+async function generateWorkPdf(workId){const w=findBy("obras",workId);if(!w)throw new Error("Selecione a obra.");const active=state.data.movimentacoes.filter(m=>m.obraId===workId&&m.statusAssinatura==="assinado"&&(m.tipoItem==="epi"||m.estado==="em_posse"));const J=pdfLib(),doc=new J({unit:"mm",format:"a4"});doc.setFontSize(9);doc.text(`Cliente: ${w.cliente||"—"}`,12,49);doc.text(`Status: ${w.status||"—"}`,12,54);doc.autoTable({startY:60,theme:"grid",styles:{fontSize:7,cellPadding:2},head:[['COLABORADOR','ITEM','TIPO','CA / TAG / SÉRIE','QTD.','ASSINADO EM']],body:active.map(m=>[m.colaboradorNome,m.itemDescricao,m.tipoItem.toUpperCase(),m.caTagSerie||'',String(m.quantidade||1),dateTimeBR(m.assinadoEm)]),margin:{left:12,right:10}});addPdfFooters(doc,`FICHA OPERACIONAL DE EPI E EQUIPAMENTOS — ${w.nome}`,"SE-FRM-SST-004");doc.save(`Ficha_Obra_${w.nome.replace(/\s+/g,"_")}.pdf`);await audit("PDF gerado","obra",w.id,"Ficha operacional da obra");}
+
+function renderUsers(){if(!(isAdmin()||isMaster())){navigate("dashboard");return;}const rows=[...state.data.usuarios].sort((a,b)=>byName(a,b,"nome"));ui.root.innerHTML=moduleHeader("CONTROLE DE ACESSO","Usuários","As contas de Authentication continuam sendo criadas no Firebase Console. Aqui você cria/vincula o perfil do sistema.",isAdmin()?`<button class="module-primary-button" data-action="new-user-profile">+ Novo perfil de usuário</button>`:"")+`<div class="warning-strip">Para um novo usuário: primeiro crie a conta em Firebase Authentication e copie o UID. Depois cadastre o perfil aqui. O perfil Administrador permanece reservado ao administrador atual.</div><div class="section-separator"></div><div class="module-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Colaborador vinculado</th><th>Status</th><th>Ações</th></tr></thead><tbody>${rows.map(u=>`<tr><td><strong>${esc(u.nome||"—")}</strong></td><td>${esc(u.email||"—")}</td><td>${esc(roleLabel(u.role))}</td><td>${esc(findBy("colaboradores",u.colaboradorId)?.nomeCompleto||"Não vinculado")}</td><td>${badge(u.ativo===false?"Inativo":"Ativo",u.ativo===false?"inactive":"active")}</td><td><button class="table-action-button" data-action="edit-user-profile" data-id="${u.id}">${isAdmin()?"Editar":"Vincular/Status"}</button></td></tr>`).join("")||`<tr><td colspan="6" class="empty-state">Nenhum perfil encontrado.</td></tr>`}</tbody></table></div></div>`;}
+function openUserProfile(id=""){const u=id?findBy("usuarios",id):{};const creating=!id;if(creating&&!isAdmin())return;const collabs=state.data.colaboradores.filter(c=>c.ativo!==false||c.id===u?.colaboradorId).sort((a,b)=>byName(a,b,"nomeCompleto"));const masterLimited=isMaster()&&!isAdmin();const roleOptions=isAdmin()?(u?.role==="administrador"?["administrador"]:["master","gestor","colaborador"]):[u?.role||"colaborador"];modal(creating?"Novo perfil de usuário":"Editar perfil de usuário",`<form id="user-form"><div class="form-grid">${field("UID do Firebase Authentication","uid",u?.id||"",{required:true,disabled:!creating})}${field("Nome da conta","nome",u?.nome||"",{required:true,disabled:masterLimited})}${field("E-mail","email",u?.email||"",{type:"email",required:true,disabled:masterLimited})}${selectField("Perfil de acesso","role",roleOptions.map(r=>[r,roleLabel(r)]),u?.role||"colaborador",{disabled:masterLimited||u?.role==="administrador"})}${selectField("Colaborador correspondente","colaboradorId",[["","Não vinculado"],...collabs.map(c=>[c.id,c.nomeCompleto])],u?.colaboradorId||"")}${selectField("Status","ativo",[["true","Ativo"],["false","Inativo"]],u?.ativo===false?"false":"true")}</div><div id="modal-msg"></div></form>`,{footer:`<button class="secondary-button" data-close-modal>Cancelar</button><button class="module-primary-button" form="user-form">Salvar perfil</button>`});$("#user-form").onsubmit=async e=>{e.preventDefault();const f=formDataObj(e.target),uid=creating?f.uid.trim():id;if(!uid)return;let payload;if(masterLimited){payload={colaboradorId:f.colaboradorId||"",ativo:f.ativo==="true",atualizadoEm:serverTimestamp(),atualizadoPor:state.user.uid};}else{const finalRole=u?.role==="administrador"?"administrador":norm(f.role);if(creating&&finalRole==="administrador"){$("#modal-msg").innerHTML=msgBox("Não é permitido criar outro Administrador por esta tela.");return;}payload={nome:f.nome.trim(),email:f.email.trim(),role:finalRole,colaboradorId:f.colaboradorId||"",ativo:f.ativo==="true",atualizadoEm:serverTimestamp(),atualizadoPor:state.user.uid};}
+ try{if(creating)await setDoc(doc(db,"usuarios",uid),{...payload,criadoEm:serverTimestamp(),criadoPor:state.user.uid});else await updateDoc(doc(db,"usuarios",uid),payload);if(uid===state.user.uid&&payload.colaboradorId!==undefined)state.profile={...state.profile,...payload};await audit(creating?"Perfil criado":"Perfil atualizado","usuario",uid,payload.email||u?.email||"");closeModal();showToast("Perfil de usuário salvo.");}catch(err){console.error(err);$("#modal-msg").innerHTML=msgBox(`Não foi possível salvar o perfil. ${err.code||err.message||""}`);}};}
+
+function renderAudit(){if(!isMgmt()){navigate("dashboard");return;}const rows=[...state.data.auditoria].sort((a,b)=>(b.criadoEm?.seconds||0)-(a.criadoEm?.seconds||0)).slice(0,250);ui.root.innerHTML=moduleHeader("HISTÓRICO DO SISTEMA","Auditoria","Registro das principais ações executadas no Safety EPI.")+`<div class="module-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Data</th><th>Usuário</th><th>Evento</th><th>Entidade</th><th>Detalhes</th></tr></thead><tbody>${rows.map(a=>`<tr><td>${dateTimeBR(a.criadoEm)}</td><td>${esc(a.usuarioNome||"—")}</td><td><strong>${esc(a.evento||"—")}</strong></td><td>${esc(a.entidade||"—")}</td><td>${esc(a.detalhes||"—")}</td></tr>`).join("")||`<tr><td colspan="5" class="empty-state">Sem registros de auditoria.</td></tr>`}</tbody></table></div></div>`;}
+
+function handleAction(action,id){const map={
+  "new-collab":()=>openCollaborator(),"edit-collab":()=>openCollaborator(id),"collab-history":()=>showCollaboratorHistory(id),
+  "new-work":()=>openWork(),"edit-work":()=>openWork(id),"mobilize":()=>openMobilize(id),"demobilize":()=>openDemobilize(id),
+  "new-epi":()=>openEpi(),"edit-epi":()=>openEpi(id),"new-equipment":()=>openEquipment(),"edit-equipment":()=>openEquipment(id),
+  "equipment-detail":()=>equipmentHistory(id),"equipment-qr":()=>showQR(id),"new-kit":()=>openKit(),"edit-kit":()=>openKit(id),"kit-detail":()=>kitDetail(id),
+  "stock-entry":()=>openStockEntry(),"new-inspection":()=>openInspection(id||""),"inspection-detail":()=>inspectionDetail(id),
+  "new-movement":()=>openMovement(),"movement-detail":()=>movementDetail(id),"sign-movement":()=>openSignature(id),"cancel-movement":()=>cancelMovement(id),
+  "return-movement":()=>createReturn(findBy("movimentacoes",id)),"new-user-profile":()=>openUserProfile(),"edit-user-profile":()=>openUserProfile(id),
+  "pdf-epi":()=>generateEpiPdf($("#report-collab")?.value,$("#report-work")?.value||"").catch(e=>showToast(e.message)),
+  "pdf-trace":()=>generateTracePdf($("#report-equipment")?.value).catch(e=>showToast(e.message)),
+  "pdf-work":()=>generateWorkPdf($("#report-work-summary")?.value).catch(e=>showToast(e.message))
+};if(map[action])map[action]();}
+
+document.addEventListener("click",e=>{const close=e.target.closest("[data-close-modal]");if(close){if(e.target.matches(".modal-backdrop")||e.target.closest("button"))closeModal();return;}const nav=e.target.closest("[data-nav]");if(nav){navigate(nav.dataset.nav);return;}const a=e.target.closest("[data-action]");if(a&&!a.disabled){handleAction(a.dataset.action,a.dataset.id||"");}});
+ui.menuToggle.onclick=()=>{ui.sidebar.classList.toggle("open");ui.backdrop.classList.toggle("hidden")};ui.backdrop.onclick=()=>{ui.sidebar.classList.remove("open");ui.backdrop.classList.add("hidden")};ui.togglePassword.onclick=()=>{ui.password.type=ui.password.type==="password"?"text":"password"};
+ui.loginForm.onsubmit=async e=>{e.preventDefault();ui.loginMessage.className="message hidden";ui.loginButton.disabled=true;try{await signInWithEmailAndPassword(auth,ui.email.value.trim(),ui.password.value);}catch(err){ui.loginMessage.textContent=authMessage(err);ui.loginMessage.className="message error";ui.loginButton.disabled=false;}};
+ui.logout.onclick=async()=>{stopData();await signOut(auth)};
+window.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
+
+async function handleDeepLink(){const p=new URLSearchParams(location.search),eq=p.get("equipamento");if(eq&&findBy("equipamentos",eq)){state.pendingDeepLink=null;navigate("equipamentos");setTimeout(()=>equipmentHistory(eq),100);}else if(eq)state.pendingDeepLink=eq;}
+
+try{await setPersistence(auth,browserLocalPersistence);}catch(e){console.warn(e)}
+onAuthStateChanged(auth,async user=>{if(!user){state.user=null;state.profile=null;stopData();ui.loginButton.disabled=false;showLogin();return;}ui.loading.classList.remove("hidden");ui.loginView.classList.add("hidden");ui.appView.classList.add("hidden");try{state.user=user;state.profile=await loadProfile(user);startData();showApp();setTimeout(handleDeepLink,900);}catch(err){console.error(err);await signOut(auth);ui.loginMessage.textContent=authMessage(err);ui.loginMessage.className="message error";showLogin();}});

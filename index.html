@@ -17,73 +17,33 @@
   <main id="login-view" class="login-view hidden">
     <section class="login-shell" aria-labelledby="login-title">
       <div class="login-brand-panel">
-        <div class="brand-mark-wrap">
-          <img src="./assets/logo-safety.png" alt="Safety Equipamentos" class="brand-logo" />
-        </div>
+        <div class="brand-mark-wrap"><img src="./assets/logo-safety.png" alt="Safety Equipamentos" class="brand-logo" /></div>
         <div class="brand-copy">
           <span class="eyebrow">SISTEMA INTERNO</span>
           <h1>Gestão de EPIs<br />e Equipamentos</h1>
-          <p>Controle de entrega, rastreabilidade, kits, obras e inspeções.</p>
+          <p>Controle de entrega, rastreabilidade, kits, obras, inspeções e assinaturas.</p>
         </div>
         <div class="brand-rule"><span></span></div>
       </div>
-
       <div class="login-form-panel">
         <div class="login-form-wrap">
-          <div class="mobile-logo-wrap">
-            <img src="./assets/logo-safety.png" alt="Safety Equipamentos" class="mobile-logo" />
-          </div>
-
+          <div class="mobile-logo-wrap"><img src="./assets/logo-safety.png" alt="Safety Equipamentos" class="mobile-logo" /></div>
           <span class="eyebrow login-eyebrow">ACESSO RESTRITO</span>
           <h2 id="login-title">Entrar no sistema</h2>
           <p class="login-intro">Use seu e-mail e senha cadastrados pela Safety Equipamentos.</p>
-
           <form id="login-form" novalidate>
-            <div class="field-group">
-              <label for="email">E-mail</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autocomplete="username"
-                placeholder="seuemail@exemplo.com"
-                required
-              />
-            </div>
-
+            <div class="field-group"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" placeholder="seuemail@exemplo.com" required /></div>
             <div class="field-group">
               <label for="password">Senha</label>
               <div class="password-field">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autocomplete="current-password"
-                  placeholder="Digite sua senha"
-                  required
-                />
-                <button id="toggle-password" class="icon-button password-toggle" type="button" aria-label="Mostrar senha" title="Mostrar senha">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-                </button>
+                <input id="password" type="password" autocomplete="current-password" placeholder="Digite sua senha" required />
+                <button id="toggle-password" class="icon-button password-toggle" type="button" aria-label="Mostrar senha">◉</button>
               </div>
             </div>
-
             <div id="login-message" class="message hidden" role="alert"></div>
-
-            <button id="login-button" class="primary-button" type="submit">
-              <span class="button-label">Entrar</span>
-              <span class="button-spinner hidden" aria-hidden="true"></span>
-            </button>
+            <button id="login-button" class="primary-button" type="submit"><span class="button-label">Entrar</span><span class="button-spinner hidden"></span></button>
           </form>
-
-          <div class="login-footer">
-            <span>Safety Equipamentos</span>
-            <span class="dot">•</span>
-            <span>Uso interno</span>
-          </div>
+          <div class="login-footer"><span>Safety Equipamentos</span><span>•</span><span>Uso interno</span></div>
         </div>
       </div>
     </section>
@@ -93,345 +53,35 @@
     <aside id="sidebar" class="sidebar">
       <div class="sidebar-brand">
         <img src="./assets/logo-safety.png" alt="Safety Equipamentos" />
-        <div>
-          <strong>Safety EPI</strong>
-          <span>Gestão de EPIs</span>
-        </div>
+        <div><strong>Safety EPI</strong><span>Gestão de EPIs</span></div>
       </div>
-
-      <nav class="sidebar-nav" aria-label="Menu principal">
-        <button class="nav-item active" data-module="dashboard" type="button">
-          <span class="nav-icon">⌂</span><span>Dashboard</span>
-        </button>
-        <button class="nav-item" data-module="colaboradores" type="button">
-          <span class="nav-icon">◉</span><span>Colaboradores</span>
-        </button>
-        <button class="nav-item" data-module="obras" type="button">
-          <span class="nav-icon">▦</span><span>Obras</span>
-        </button>
-        <button class="nav-item" data-module="epis" type="button">
-          <span class="nav-icon">◆</span><span>EPIs</span>
-        </button>
-        <button class="nav-item" data-module="equipamentos" type="button">
-          <span class="nav-icon">◈</span><span>Equipamentos</span>
-        </button>
-        <button class="nav-item" data-module="kits" type="button">
-          <span class="nav-icon">▣</span><span>KITs</span>
-        </button>
-        <button class="nav-item" data-module="estoque" type="button">
-          <span class="nav-icon">▤</span><span>Estoque</span>
-        </button>
-        <button class="nav-item" data-module="inspecoes" type="button">
-          <span class="nav-icon">✓</span><span>Inspeções</span>
-        </button>
-        <button class="nav-item" data-module="movimentacoes" type="button">
-          <span class="nav-icon">⇄</span><span>Movimentações</span>
-        </button>
-        <button class="nav-item" data-module="relatorios" type="button">
-          <span class="nav-icon">▥</span><span>Relatórios</span>
-        </button>
-        <button id="users-nav-item" class="nav-item hidden" data-module="usuarios" type="button">
-          <span class="nav-icon">⚙</span><span>Usuários</span>
-        </button>
-      </nav>
-
-      <div class="sidebar-footer">
-        <span>V1.0 — Vínculo de usuários</span>
-      </div>
+      <nav id="sidebar-nav" class="sidebar-nav" aria-label="Menu principal"></nav>
+      <div class="sidebar-footer"><span>V1.0 — Completa</span></div>
     </aside>
+    <div id="sidebar-backdrop" class="sidebar-backdrop hidden"></div>
 
     <div class="app-main">
       <header class="topbar">
         <div class="topbar-left">
           <button id="menu-toggle" class="icon-button menu-toggle" type="button" aria-label="Abrir menu">☰</button>
-          <div>
-            <span class="topbar-kicker">SAFETY EQUIPAMENTOS</span>
-            <h1 id="page-title">Dashboard</h1>
-          </div>
+          <div><span class="topbar-kicker">SAFETY EQUIPAMENTOS</span><h1 id="page-title">Dashboard</h1></div>
         </div>
-
         <div class="user-area">
-          <div class="user-meta">
-            <strong id="user-name">Usuário</strong>
-            <span id="user-role">Perfil</span>
-          </div>
+          <div class="user-meta"><strong id="user-name">Usuário</strong><span id="user-role">Perfil</span></div>
           <div id="user-avatar" class="user-avatar">U</div>
           <button id="logout-button" class="logout-button" type="button">Sair</button>
         </div>
       </header>
-
-      <section id="dashboard-panel" class="content-panel">
-        <div class="welcome-card">
-          <div>
-            <span class="eyebrow">BEM-VINDO</span>
-            <h2 id="welcome-name">Safety EPI</h2>
-            <p>A base do sistema está conectada ao Firebase. Os módulos serão liberados gradualmente durante a construção da V1.</p>
-          </div>
-          <div class="status-pill"><span class="status-dot"></span> Sistema conectado</div>
-        </div>
-
-        <div class="metric-grid">
-          <article class="metric-card">
-            <span class="metric-label">Colaboradores</span>
-            <strong id="collaborator-count-metric">0</strong>
-            <small id="collaborator-count-caption">Carregando cadastros...</small>
-          </article>
-          <article class="metric-card">
-            <span class="metric-label">Obras ativas</span>
-            <strong>—</strong>
-            <small>Módulo em construção</small>
-          </article>
-          <article class="metric-card">
-            <span class="metric-label">Equipamentos em uso</span>
-            <strong>—</strong>
-            <small>Módulo em construção</small>
-          </article>
-          <article class="metric-card">
-            <span class="metric-label">Assinaturas pendentes</span>
-            <strong>—</strong>
-            <small>Módulo em construção</small>
-          </article>
-        </div>
-
-        <div class="dashboard-grid">
-          <article class="section-card">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">V1 — FUNDAÇÃO</span>
-                <h3>Configuração inicial</h3>
-              </div>
-            </div>
-            <ul class="check-list">
-              <li class="done"><span>✓</span> Firebase Authentication</li>
-              <li class="done"><span>✓</span> Cloud Firestore</li>
-              <li class="done"><span>✓</span> Perfil Administrador</li>
-              <li class="done"><span>✓</span> Validação de usuário ativo</li>
-              <li class="done"><span>✓</span> Login, sessão e logout</li>
-            </ul>
-          </article>
-
-          <article class="section-card">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">ETAPA ATUAL</span>
-                <h3>Vínculo de usuários</h3>
-              </div>
-            </div>
-            <p class="section-copy">O cadastro de colaboradores está aprovado. Agora vinculamos cada conta de acesso ao respectivo registro de colaborador.</p>
-            <div class="notice-box">
-              <strong>Regra já definida</strong>
-              <span>Todo usuário do sistema também deverá estar vinculado a um colaborador da Safety.</span>
-            </div>
-          </article>
-        </div>
-      </section>
-
-
-      <section id="collaborators-panel" class="content-panel hidden">
-        <div class="module-header">
-          <div>
-            <span class="eyebrow">CADASTRO CORPORATIVO</span>
-            <h2>Colaboradores</h2>
-            <p>Base individual utilizada nas fichas de EPI, movimentações, obras e vínculos de acesso.</p>
-          </div>
-          <button id="new-collaborator-button" class="module-primary-button" type="button">+ Novo colaborador</button>
-        </div>
-
-        <div class="module-toolbar">
-          <div class="search-field">
-            <span aria-hidden="true">⌕</span>
-            <input id="collaborator-search" type="search" placeholder="Pesquisar por nome, matrícula, função, setor ou gestor" autocomplete="off" />
-          </div>
-          <span id="collaborator-summary" class="module-summary">Carregando...</span>
-        </div>
-
-        <div class="table-card">
-          <div class="table-scroll">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Nome completo</th>
-                  <th>Matrícula/cadastro</th>
-                  <th>Cargo/função</th>
-                  <th>Setor/contrato</th>
-                  <th>Admissão</th>
-                  <th>Gestor responsável</th>
-                  <th>Status</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="collaborator-table-body"></tbody>
-            </table>
-          </div>
-
-          <div id="collaborator-empty" class="empty-state">
-            <div class="empty-state-icon">◉</div>
-            <strong>Nenhum colaborador cadastrado</strong>
-            <span>Use o botão Novo colaborador para iniciar o cadastro.</span>
-          </div>
-        </div>
-      </section>
-
-      <section id="users-panel" class="content-panel hidden">
-        <div class="module-header">
-          <div>
-            <span class="eyebrow">ADMINISTRAÇÃO DE ACESSO</span>
-            <h2>Usuários</h2>
-            <p>Vincule cada conta de acesso ao respectivo colaborador. Nesta etapa, não estamos criando novas contas ainda.</p>
-          </div>
-        </div>
-
-        <div class="module-toolbar">
-          <div class="search-field">
-            <span aria-hidden="true">⌕</span>
-            <input id="users-search" type="search" placeholder="Pesquisar por nome, e-mail, perfil ou colaborador" autocomplete="off" />
-          </div>
-          <span id="users-summary" class="module-summary">Carregando...</span>
-        </div>
-
-        <div class="table-card">
-          <div class="table-scroll">
-            <table class="data-table users-table">
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>E-mail</th>
-                  <th>Perfil</th>
-                  <th>Colaborador vinculado</th>
-                  <th>Status</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="users-table-body"></tbody>
-            </table>
-          </div>
-
-          <div id="users-empty" class="empty-state">
-            <div class="empty-state-icon">⚙</div>
-            <strong>Nenhum usuário cadastrado</strong>
-            <span>Os usuários com acesso ao sistema aparecerão aqui.</span>
-          </div>
-        </div>
-      </section>
-
-      <section id="placeholder-panel" class="content-panel hidden">
-        <div class="placeholder-card">
-          <div class="placeholder-icon">⌁</div>
-          <span class="eyebrow">MÓDULO PROGRAMADO</span>
-          <h2 id="placeholder-title">Módulo</h2>
-          <p>Esta área já está prevista na arquitetura da V1 e será construída nas próximas etapas.</p>
-          <button id="back-dashboard" class="secondary-button" type="button">Voltar ao Dashboard</button>
-        </div>
-      </section>
-    </div>
-
-    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
-  </div>
-
-
-  <div id="collaborator-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="collaborator-modal-title">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div>
-          <span class="eyebrow">COLABORADOR</span>
-          <h2 id="collaborator-modal-title">Novo colaborador</h2>
-        </div>
-        <button id="close-collaborator-modal" class="modal-close" type="button" aria-label="Fechar">×</button>
-      </div>
-
-      <form id="collaborator-form">
-        <input id="collaborator-id" type="hidden" />
-        <div class="form-grid">
-          <div class="field-group form-span-2">
-            <label for="collaborator-name">Nome completo *</label>
-            <input id="collaborator-name" type="text" maxlength="140" required />
-          </div>
-          <div class="field-group">
-            <label for="collaborator-registration">Matrícula/cadastro</label>
-            <input id="collaborator-registration" type="text" maxlength="60" />
-          </div>
-          <div class="field-group">
-            <label for="collaborator-role">Cargo/função</label>
-            <input id="collaborator-role" type="text" maxlength="100" />
-          </div>
-          <div class="field-group">
-            <label for="collaborator-sector">Setor/contrato</label>
-            <input id="collaborator-sector" type="text" maxlength="120" />
-          </div>
-          <div class="field-group">
-            <label for="collaborator-admission">Data de admissão</label>
-            <input id="collaborator-admission" type="date" />
-          </div>
-          <div class="field-group">
-            <label for="collaborator-manager">Gestor responsável</label>
-            <input id="collaborator-manager" type="text" maxlength="140" />
-          </div>
-          <div class="field-group">
-            <label for="collaborator-status">Status</label>
-            <select id="collaborator-status">
-              <option value="true">Ativo</option>
-              <option value="false">Inativo</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="collaborator-form-message" class="message hidden" role="alert"></div>
-
-        <div class="modal-footer">
-          <button id="cancel-collaborator-modal" class="modal-secondary-button" type="button">Cancelar</button>
-          <button id="collaborator-save-button" class="modal-primary-button" type="submit">
-            <span class="button-label">Salvar colaborador</span>
-          </button>
-        </div>
-      </form>
+      <main id="module-root" class="content-panel"></main>
     </div>
   </div>
 
-  <div id="user-link-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="user-link-modal-title">
-    <div class="modal-card compact-modal-card">
-      <div class="modal-header">
-        <div>
-          <span class="eyebrow">USUÁRIO</span>
-          <h2 id="user-link-modal-title">Vincular usuário ao colaborador</h2>
-        </div>
-        <button id="close-user-link-modal" class="modal-close" type="button" aria-label="Fechar">×</button>
-      </div>
+  <div id="modal-host"></div>
+  <div id="toast" class="toast hidden" role="status"></div>
 
-      <form id="user-link-form" class="modal-form-padding">
-        <input id="user-link-id" type="hidden" />
-        <div class="form-grid">
-          <div class="field-group">
-            <label for="user-link-name">Nome da conta</label>
-            <input id="user-link-name" type="text" disabled />
-          </div>
-          <div class="field-group">
-            <label for="user-link-email">E-mail</label>
-            <input id="user-link-email" type="email" disabled />
-          </div>
-          <div class="field-group">
-            <label for="user-link-role">Perfil de acesso</label>
-            <input id="user-link-role" type="text" disabled />
-          </div>
-          <div class="field-group">
-            <label for="user-link-collaborator">Colaborador correspondente *</label>
-            <select id="user-link-collaborator" required>
-              <option value="">Selecione o colaborador</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="user-link-message" class="message hidden" role="alert"></div>
-
-        <div class="modal-footer">
-          <button id="cancel-user-link-modal" class="modal-secondary-button" type="button">Cancelar</button>
-          <button id="user-link-save-button" class="modal-primary-button" type="submit">Salvar vínculo</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
-
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
   <script type="module" src="./app.js"></script>
 </body>
 </html>

@@ -1,17 +1,52 @@
-SAFETY EPI — V1 / VÍNCULO DE USUÁRIOS
+SAFETY EPI — V1 COMPLETA
+========================
 
-Etapa atual:
-- Login, sessão e logout aprovados.
-- Cadastro de colaboradores aprovado.
-- Administração de usuários visível somente ao Administrador.
-- Vínculo entre usuarios/{uid}.colaboradorId e colaboradores/{id}.
-- Exclusão de usuário no Firestore bloqueada; contas devem ser inativadas em etapas futuras.
+Versão integrada para bateria de testes.
 
-ATUALIZAÇÃO
-1. Publique o conteúdo de firestore.rules no Firestore.
-2. No GitHub, substitua app.js, index.html, style.css, firestore.rules e LEIA-ME.txt.
-3. Aguarde o GitHub Pages concluir a publicação.
-4. Atualize o app com Ctrl+F5.
-5. Entre em Usuários e vincule a conta Administrador ao seu cadastro de colaborador.
+MÓDULOS
+- Dashboard
+- Colaboradores
+- Obras
+- EPIs
+- Equipamentos rastreáveis e cordas
+- KITs
+- Estoque
+- Inspeções
+- Movimentações e assinatura eletrônica
+- Mobilização e desmobilização por obra
+- Relatórios PDF (ficha completa, ficha por obra, rastreabilidade e resumo da obra)
+- QR Code de equipamento
+- Usuários / vínculos / perfis
+- Auditoria
 
-Ainda não criaremos novos usuários nesta etapa. Primeiro validaremos o vínculo.
+PERFIS
+- Administrador: acesso total e criação de perfis de usuário.
+- Master: acesso operacional completo; pode visualizar usuários e alterar vínculo/status, mas não criar perfis nem mudar função.
+- Gestor: gestão operacional; sem módulo Usuários.
+- Colaborador: visualiza o próprio cadastro, suas movimentações e relatórios próprios; assina recebimentos/devoluções.
+
+IMPORTANTE SOBRE NOVOS USUÁRIOS
+A V1 não cria contas do Firebase Authentication pelo navegador. Para novo usuário:
+1. Criar a conta em Firebase Console > Authentication > Usuários.
+2. Copiar o UID.
+3. No Safety EPI, Administrador > Usuários > Novo perfil de usuário.
+4. Informar UID, nome, e-mail, perfil e colaborador correspondente.
+
+NOTIFICAÇÃO DA V1
+As pendências de assinatura aparecem dentro do sistema, no Dashboard e em Movimentações. Push/e-mail externo não faz parte desta V1.
+
+PDF
+Os PDFs usam o padrão visual e os dados corporativos dos formulários atuais:
+- SE-FRM-SST-004 — Ficha de entrega, recebimento e controle de EPI e uniformes.
+- SE-FRM-AC-002 — Rastreabilidade de equipamentos de acesso por cordas.
+
+PUBLICAÇÃO
+Substituir no GitHub os arquivos:
+- index.html
+- style.css
+- app.js
+- firestore.rules
+- LEIA-ME.txt
+- assets/logo-safety.png (somente se necessário)
+
+Antes de testar, publicar também o conteúdo de firestore.rules em Firebase > Firestore > Regras.
