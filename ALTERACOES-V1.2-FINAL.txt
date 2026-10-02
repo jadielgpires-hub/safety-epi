@@ -1,0 +1,34 @@
+SAFETY EPI — ALTERAÇÕES V1.2 FINAL
+
+1. KITs
+- Bloqueio de equipamento já associado a outro KIT.
+- Validação também no momento de salvar o KIT.
+
+2. Mobilização
+- Exibe itens já alocados e assinados para o colaborador naquela obra.
+- Exibe separadamente itens ainda aguardando assinatura.
+- Disponíveis para nova mobilização permanecem em seção própria.
+
+3. Relatórios/PDF
+- Removido o verde/turquesa das tabelas.
+- Cabeçalhos das tabelas em azul Safety (#073B73) com texto branco.
+- Campos fixos/legendas em azul-claro (#EAF2F8).
+- Campos preenchidos permanecem brancos.
+- Mantidos detalhes dourados e cabeçalho/rodapé corporativos.
+
+4. QR Code
+- Gerador QR incorporado ao projeto em qr-local.js.
+- Não depende mais da biblioteca externa que falhou nos testes.
+- Download PNG funcional.
+- Link mantém o ID do equipamento e abre a rastreabilidade após autenticação.
+
+5. Perfis
+- Administrador: tudo.
+- Master: tudo, exceto Usuários.
+- Gestor: tudo operacional, exceto Usuários e Auditoria.
+- Colaborador: acesso pessoal restrito.
+- Regras do Firestore também bloqueiam leitura da Auditoria pelo Gestor.
+
+6. Identidade
+- Favicon Safety incluído.
+- Título do navegador: Safety EPI | Safety Equipamentos.

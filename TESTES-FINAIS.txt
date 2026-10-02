@@ -1,0 +1,31 @@
+SAFETY EPI — RESUMO DA BATERIA DE TESTES DA V1
+
+APROVADOS
+01 Novo colaborador
+02 Edição de colaborador
+03 Ativar/inativar colaborador
+04 Vínculo usuário-colaborador
+05 Perfil Gestor
+06 Perfil Master
+07 Perfil Colaborador
+08 Obras
+09 EPIs e Estoque
+10 Equipamentos e Cordas
+11 KITs — aprovado com ajuste incorporado na V1.2
+12 Inspeções
+13 Movimentação e assinatura em lote
+14 Mobilização/desmobilização — aprovado com ajuste incorporado na V1.2
+15 Relatórios/PDF — aprovado com ajuste visual incorporado na V1.2
+16 Auditoria
+17 QR Code — reprovado na V1.1.1 e corrigido na V1.2
+18 Dashboard com dados reais
+19 Integridade/cancelamento das movimentações
+20 Devolução efetiva
+21 Ciclo pós-devolução e inspeção
+22 Estoque e cancelamento de EPI consumível
+23 Bloqueio de usuário inativo
+24 Proteção do Administrador
+25 Sessão, persistência, logout e permissões
+
+FLUXO DE EQUIPAMENTO VALIDADO
+Disponível > Em uso > Devolvido > Aguardando inspeção > Disponível.

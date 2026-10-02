@@ -19,6 +19,9 @@ service cloud.firestore {
     function isManager() {
       return active() && me().role in ['administrador', 'master', 'gestor'];
     }
+    function canReadAudit() {
+      return active() && me().role in ['administrador', 'master'];
+    }
     function myCollaboratorId() {
       return active() && ('colaboradorId' in me()) ? me().colaboradorId : '';
     }
@@ -115,7 +118,7 @@ service cloud.firestore {
     }
 
     match /auditoria/{id} {
-      allow read: if isManager();
+      allow read: if canReadAudit();
       allow create: if active();
       allow update, delete: if false;
     }

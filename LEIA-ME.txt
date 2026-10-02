@@ -1,24 +1,28 @@
-SAFETY EPI — V1.1 REVISADA
+SAFETY EPI — V1.2 FINAL
 
-Principais correções e melhorias desta revisão:
-- Regras do Firestore simplificadas e alinhadas aos perfis Administrador, Master, Gestor e Colaborador.
-- Mensagens de erro de gravação agora mostram a causa real quando o Firestore negar a operação.
-- Master e Gestor acessam toda a operação, exceto Usuários. Usuários é exclusivo do Administrador.
-- KITs são genéricos e possuem categoria/finalidade livre (acesso por cordas, resgate, primeiros socorros, ferramentas etc.).
-- Inspeções possuem Resultado e Destinação/Ação pós-inspeção, atualizando o status do equipamento.
-- Movimentações aceitam vários itens em um único conjunto e geram uma única assinatura.
-- Mobilização agrupa EPIs, KITs e cordas em uma única assinatura.
-- QR Code permanece disponível por equipamento após o cadastro, abrindo a rastreabilidade pela TAG.
-- Auditoria recebeu pesquisa e filtros.
-- Dashboard recebeu alertas de inspeção, quarentena, devolução e estoque baixo.
-- UID de usuário existente não é editável; e-mail existente é de referência; Administrador não pode ser rebaixado/inativado pelo app.
+Aplicativo web interno da Safety Equipamentos para gestão de EPIs, equipamentos rastreáveis, KITs, estoque, inspeções, movimentações, assinaturas, obras e relatórios.
 
-INSTALAÇÃO / ATUALIZAÇÃO
-1. Firebase Console > Firestore > Regras: substitua TODO o conteúdo pelas regras do arquivo firestore.rules e clique em Publicar.
-2. GitHub > repositório safety-epi: substitua index.html, style.css, app.js e firestore.rules pelos arquivos desta pasta.
-3. Mantenha assets/logo-safety.png.
-4. Aguarde o GitHub Pages publicar.
-5. Abra o app e pressione Ctrl+F5.
+PUBLICAÇÃO
+1. Publique o conteúdo de firestore.rules em Firebase > Firestore > Regras.
+2. No GitHub, substitua os arquivos do aplicativo pelos arquivos desta pasta.
+3. Inclua também qr-local.js e assets/favicon.png.
+4. Aguarde o GitHub Pages concluir a publicação.
+5. Abra o aplicativo e use Ctrl+F5 na primeira carga após a atualização.
 
-IMPORTANTE
-Publique firestore.rules ANTES de testar qualquer gravação. Se ainda houver permission-denied, o próprio formulário mostrará essa mensagem explicitamente.
+PERFIS
+- Administrador: acesso total, inclusive Usuários e Auditoria.
+- Master: acesso total operacional e Auditoria; não acessa Usuários.
+- Gestor: acesso operacional; não acessa Usuários nem Auditoria.
+- Colaborador: Dashboard, próprio cadastro, próprias Movimentações e próprios Relatórios.
+
+AJUSTES FINAIS DA V1.2
+- Um equipamento rastreável não pode pertencer a dois KITs ao mesmo tempo.
+- Mobilização mostra itens já alocados/assinados para o colaborador naquela obra.
+- PDFs usam identidade Safety: azul #073B73, dourado #D4A017 e azul-claro nos campos fixos.
+- QR Code passou a ser gerado localmente, sem dependência de CDN, com download PNG e link direto para a TAG/equipamento.
+- Perfil Gestor não visualiza nem lê Auditoria.
+- Favicon da Safety incluído.
+- Mantidos os fluxos aprovados de assinatura em lote, devolução, cancelamento auditável, estoque e inspeções.
+
+OBSERVAÇÃO
+As contas de login continuam sendo criadas no Firebase Authentication. O perfil correspondente é vinculado pelo módulo Usuários no aplicativo.
