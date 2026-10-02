@@ -1,28 +1,17 @@
-SAFETY EPI — V1 EM CONSTRUÇÃO
+SAFETY EPI — V1 / VÍNCULO DE USUÁRIOS
 
-Versão atual: módulo Colaboradores
+Etapa atual:
+- Login, sessão e logout aprovados.
+- Cadastro de colaboradores aprovado.
+- Administração de usuários visível somente ao Administrador.
+- Vínculo entre usuarios/{uid}.colaboradorId e colaboradores/{id}.
+- Exclusão de usuário no Firestore bloqueada; contas devem ser inativadas em etapas futuras.
 
-Incluído nesta etapa:
-- Login Firebase por e-mail e senha
-- Sessão persistente e logout
-- Validação de usuário ativo e perfil
-- Dashboard inicial
-- Cadastro de colaboradores
-- Pesquisa de colaboradores
-- Edição e ativação/inativação de colaboradores
-- Permissões preparadas para Administrador, Master, Gestor e Colaborador
-- Colaborador comum verá apenas o próprio cadastro quando houver colaboradorId vinculado em usuarios/{uid}
+ATUALIZAÇÃO
+1. Publique o conteúdo de firestore.rules no Firestore.
+2. No GitHub, substitua app.js, index.html, style.css, firestore.rules e LEIA-ME.txt.
+3. Aguarde o GitHub Pages concluir a publicação.
+4. Atualize o app com Ctrl+F5.
+5. Entre em Usuários e vincule a conta Administrador ao seu cadastro de colaborador.
 
-IMPORTANTE — FIRESTORE RULES
-Antes de testar o módulo Colaboradores, substitua as regras publicadas no Firebase pelo conteúdo do arquivo firestore.rules e clique em Publicar.
-
-Campos atuais do colaborador, alinhados à ficha SE-FRM-SST-004:
-- Nome completo
-- Matrícula/cadastro
-- Cargo/função
-- Setor/contrato
-- Data de admissão
-- Gestor responsável
-- Status ativo/inativo
-
-Nenhum cadastro de colaborador é excluído nesta versão. O controle é feito por status ativo/inativo para preservar histórico futuro.
+Ainda não criaremos novos usuários nesta etapa. Primeiro validaremos o vínculo.

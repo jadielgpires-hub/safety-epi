@@ -48,7 +48,8 @@ service cloud.firestore {
           || ehAdministrador()
         );
 
-      allow create, update, delete: if ehAdministrador();
+      allow create, update: if ehAdministrador();
+      allow delete: if false;
     }
 
     match /colaboradores/{colaboradorId} {

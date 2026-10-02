@@ -58,6 +58,7 @@ const ui = {
   pageTitle: document.querySelector("#page-title"),
   dashboardPanel: document.querySelector("#dashboard-panel"),
   collaboratorsPanel: document.querySelector("#collaborators-panel"),
+  usersPanel: document.querySelector("#users-panel"),
   placeholderPanel: document.querySelector("#placeholder-panel"),
   placeholderTitle: document.querySelector("#placeholder-title"),
   backDashboard: document.querySelector("#back-dashboard"),
@@ -72,6 +73,22 @@ const ui = {
   collaboratorTableBody: document.querySelector("#collaborator-table-body"),
   collaboratorEmpty: document.querySelector("#collaborator-empty"),
   collaboratorSummary: document.querySelector("#collaborator-summary"),
+  usersSearch: document.querySelector("#users-search"),
+  usersTableBody: document.querySelector("#users-table-body"),
+  usersEmpty: document.querySelector("#users-empty"),
+  usersSummary: document.querySelector("#users-summary"),
+  userLinkModal: document.querySelector("#user-link-modal"),
+  userLinkModalTitle: document.querySelector("#user-link-modal-title"),
+  userLinkForm: document.querySelector("#user-link-form"),
+  userLinkId: document.querySelector("#user-link-id"),
+  userLinkName: document.querySelector("#user-link-name"),
+  userLinkEmail: document.querySelector("#user-link-email"),
+  userLinkRole: document.querySelector("#user-link-role"),
+  userLinkCollaborator: document.querySelector("#user-link-collaborator"),
+  userLinkMessage: document.querySelector("#user-link-message"),
+  closeUserLinkModal: document.querySelector("#close-user-link-modal"),
+  cancelUserLinkModal: document.querySelector("#cancel-user-link-modal"),
+  userLinkSaveButton: document.querySelector("#user-link-save-button"),
   collaboratorModal: document.querySelector("#collaborator-modal"),
   collaboratorModalTitle: document.querySelector("#collaborator-modal-title"),
   collaboratorForm: document.querySelector("#collaborator-form"),
@@ -108,6 +125,8 @@ let currentUserProfile = null;
 let toastTimer = null;
 let collaborators = [];
 let stopCollaboratorsListener = null;
+let users = [];
+let stopUsersListener = null;
 
 function normalizeRole(role) {
   return String(role || "").trim().toLowerCase();
@@ -186,6 +205,7 @@ function showApp(profile) {
   ui.appView.classList.remove("hidden");
 
   startCollaboratorsListener();
+  if (role === "administrador") startUsersListener();
   navigateTo("dashboard");
 }
 
@@ -287,7 +307,10 @@ async function handleLogout() {
   try {
     stopCollaboratorsListener?.();
     stopCollaboratorsListener = null;
+    stopUsersListener?.();
+    stopUsersListener = null;
     collaborators = [];
+    users = [];
     await signOut(auth);
   } catch (error) {
     console.error(error);
@@ -312,6 +335,7 @@ function navigateTo(moduleKey) {
 
   ui.dashboardPanel.classList.add("hidden");
   ui.collaboratorsPanel.classList.add("hidden");
+  ui.usersPanel.classList.add("hidden");
   ui.placeholderPanel.classList.add("hidden");
 
   if (moduleKey === "dashboard") {
@@ -319,6 +343,9 @@ function navigateTo(moduleKey) {
   } else if (moduleKey === "colaboradores") {
     ui.collaboratorsPanel.classList.remove("hidden");
     renderCollaborators();
+  } else if (moduleKey === "usuarios") {
+    ui.usersPanel.classList.remove("hidden");
+    renderUsers();
   } else {
     ui.placeholderPanel.classList.remove("hidden");
     ui.placeholderTitle.textContent = title;
@@ -387,6 +414,7 @@ function startCollaboratorsListener() {
       collaborators = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
       updateCollaboratorMetric();
       renderCollaborators();
+      if (normalizeRole(currentUserProfile?.role) === "administrador") renderUsers();
     }, (error) => {
       console.error("Falha ao carregar colaboradores:", error);
       showToast("Não foi possível carregar os colaboradores. Verifique as regras do Firestore.");
@@ -488,6 +516,177 @@ function renderCollaborators() {
   ui.collaboratorSummary.textContent = canManage
     ? `${total} cadastrado${total === 1 ? "" : "s"} • ${active} ativo${active === 1 ? "" : "s"} • ${inactive} inativo${inactive === 1 ? "" : "s"}`
     : total ? "Seu cadastro de colaborador" : "Cadastro não vinculado";
+}
+
+
+function collaboratorNameById(id) {
+  if (!id) return "Não vinculado";
+  return collaborators.find((item) => item.id === id)?.nomeCompleto || "Vínculo não localizado";
+}
+
+function startUsersListener() {
+  stopUsersListener?.();
+  stopUsersListener = null;
+
+  if (normalizeRole(currentUserProfile?.role) !== "administrador") {
+    users = [];
+    return;
+  }
+
+  const q = query(collection(db, "usuarios"), orderBy("nome"));
+  stopUsersListener = onSnapshot(q, (snapshot) => {
+    users = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+    renderUsers();
+  }, (error) => {
+    console.error("Falha ao carregar usuários:", error);
+    showToast("Não foi possível carregar os usuários do sistema.");
+  });
+}
+
+function userMatchesSearch(user, search) {
+  if (!search) return true;
+  const haystack = [
+    user.nome,
+    user.email,
+    roleLabel(normalizeRole(user.role)),
+    collaboratorNameById(user.colaboradorId),
+  ].join(" ").toLowerCase();
+  return haystack.includes(search.toLowerCase());
+}
+
+function renderUsers() {
+  if (!ui.usersTableBody) return;
+  if (normalizeRole(currentUserProfile?.role) !== "administrador") return;
+
+  const search = ui.usersSearch.value.trim();
+  const visible = users.filter((item) => userMatchesSearch(item, search));
+  ui.usersTableBody.innerHTML = "";
+  ui.usersEmpty.classList.toggle("hidden", visible.length > 0);
+
+  if (visible.length === 0 && users.length > 0) {
+    ui.usersEmpty.querySelector("strong").textContent = "Nenhum resultado encontrado";
+    ui.usersEmpty.querySelector("span").textContent = "Tente pesquisar por nome, e-mail, perfil ou colaborador vinculado.";
+  } else {
+    ui.usersEmpty.querySelector("strong").textContent = "Nenhum usuário cadastrado";
+    ui.usersEmpty.querySelector("span").textContent = "Os usuários com acesso ao sistema aparecerão aqui.";
+  }
+
+  visible.forEach((user) => {
+    const row = document.createElement("tr");
+    const fields = [
+      user.nome || "—",
+      user.email || "—",
+      roleLabel(normalizeRole(user.role)),
+      collaboratorNameById(user.colaboradorId),
+    ];
+
+    fields.forEach((value, index) => {
+      const cell = document.createElement("td");
+      if (index === 0) {
+        const strong = document.createElement("strong");
+        strong.className = "table-primary";
+        strong.textContent = value;
+        cell.appendChild(strong);
+      } else {
+        cell.textContent = value;
+      }
+      row.appendChild(cell);
+    });
+
+    const statusCell = document.createElement("td");
+    const badge = document.createElement("span");
+    const active = user.ativo === true;
+    badge.className = `status-badge ${active ? "active" : "inactive"}`;
+    badge.textContent = active ? "Ativo" : "Inativo";
+    statusCell.appendChild(badge);
+    row.appendChild(statusCell);
+
+    const actionCell = document.createElement("td");
+    actionCell.className = "table-actions";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "table-action-button";
+    button.textContent = "Vincular";
+    button.addEventListener("click", () => openUserLinkModal(user));
+    actionCell.appendChild(button);
+    row.appendChild(actionCell);
+    ui.usersTableBody.appendChild(row);
+  });
+
+  const linked = users.filter((item) => item.colaboradorId).length;
+  ui.usersSummary.textContent = `${users.length} usuário${users.length === 1 ? "" : "s"} • ${linked} vinculado${linked === 1 ? "" : "s"}`;
+}
+
+function populateUserLinkCollaborators(selectedId = "") {
+  ui.userLinkCollaborator.innerHTML = '<option value="">Selecione o colaborador</option>';
+  collaborators
+    .filter((item) => item.ativo !== false || item.id === selectedId)
+    .forEach((collaborator) => {
+      const option = document.createElement("option");
+      option.value = collaborator.id;
+      option.textContent = collaborator.nomeCompleto || collaborator.id;
+      option.selected = collaborator.id === selectedId;
+      ui.userLinkCollaborator.appendChild(option);
+    });
+}
+
+function openUserLinkModal(user) {
+  ui.userLinkMessage.textContent = "";
+  ui.userLinkMessage.className = "message hidden";
+  ui.userLinkId.value = user.id;
+  ui.userLinkName.value = user.nome || "";
+  ui.userLinkEmail.value = user.email || "";
+  ui.userLinkRole.value = roleLabel(normalizeRole(user.role));
+  populateUserLinkCollaborators(user.colaboradorId || "");
+  ui.userLinkModalTitle.textContent = "Vincular usuário ao colaborador";
+  ui.userLinkModal.classList.remove("hidden");
+  document.body.classList.add("modal-open");
+}
+
+function closeUserLinkDialog() {
+  ui.userLinkModal.classList.add("hidden");
+  document.body.classList.remove("modal-open");
+  ui.userLinkForm.reset();
+  ui.userLinkId.value = "";
+  ui.userLinkMessage.textContent = "";
+  ui.userLinkMessage.className = "message hidden";
+}
+
+async function handleUserLinkSubmit(event) {
+  event.preventDefault();
+  if (normalizeRole(currentUserProfile?.role) !== "administrador") return;
+
+  const userId = ui.userLinkId.value;
+  const collaboratorId = ui.userLinkCollaborator.value;
+  if (!userId || !collaboratorId) {
+    ui.userLinkMessage.textContent = "Selecione o colaborador que corresponde a esta conta de acesso.";
+    ui.userLinkMessage.className = "message error";
+    return;
+  }
+
+  ui.userLinkSaveButton.disabled = true;
+  try {
+    await updateDoc(doc(db, "usuarios", userId), {
+      colaboradorId,
+      atualizadoEm: serverTimestamp(),
+      atualizadoPor: auth.currentUser.uid,
+    });
+
+    if (userId === auth.currentUser.uid) {
+      currentUserProfile = { ...currentUserProfile, colaboradorId };
+    }
+
+    showToast("Usuário vinculado ao colaborador com sucesso.");
+    closeUserLinkDialog();
+  } catch (error) {
+    console.error("Falha ao vincular usuário:", error);
+    ui.userLinkMessage.textContent = error?.code === "permission-denied"
+      ? "O Firestore recusou a alteração. Verifique as regras publicadas."
+      : "Não foi possível salvar o vínculo. Tente novamente.";
+    ui.userLinkMessage.className = "message error";
+  } finally {
+    ui.userLinkSaveButton.disabled = false;
+  }
 }
 
 function clearCollaboratorFormMessage() {
@@ -612,12 +811,20 @@ ui.sidebarBackdrop.addEventListener("click", closeMobileMenu);
 ui.backDashboard.addEventListener("click", () => navigateTo("dashboard"));
 ui.newCollaboratorButton.addEventListener("click", () => openCollaboratorModal());
 ui.collaboratorSearch.addEventListener("input", renderCollaborators);
+ui.usersSearch.addEventListener("input", renderUsers);
+ui.userLinkForm.addEventListener("submit", handleUserLinkSubmit);
+ui.closeUserLinkModal.addEventListener("click", closeUserLinkDialog);
+ui.cancelUserLinkModal.addEventListener("click", closeUserLinkDialog);
 ui.collaboratorForm.addEventListener("submit", handleCollaboratorSubmit);
 ui.closeCollaboratorModal.addEventListener("click", closeCollaboratorDialog);
 ui.cancelCollaboratorModal.addEventListener("click", closeCollaboratorDialog);
 
 ui.collaboratorModal.addEventListener("click", (event) => {
   if (event.target === ui.collaboratorModal) closeCollaboratorDialog();
+});
+
+ui.userLinkModal.addEventListener("click", (event) => {
+  if (event.target === ui.userLinkModal) closeUserLinkDialog();
 });
 
 ui.navItems.forEach((item) => {
@@ -628,6 +835,7 @@ window.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     closeMobileMenu();
     if (!ui.collaboratorModal.classList.contains("hidden")) closeCollaboratorDialog();
+    if (!ui.userLinkModal.classList.contains("hidden")) closeUserLinkDialog();
   }
 });
 
@@ -641,7 +849,10 @@ onAuthStateChanged(auth, async (user) => {
   if (!user) {
     stopCollaboratorsListener?.();
     stopCollaboratorsListener = null;
+    stopUsersListener?.();
+    stopUsersListener = null;
     collaborators = [];
+    users = [];
     currentUserProfile = null;
     showLogin();
     return;

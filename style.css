@@ -1280,3 +1280,16 @@ button {
     width: 100%;
   }
 }
+
+/* USUÁRIOS / VÍNCULO */
+.users-table {
+  min-width: 920px;
+}
+
+.compact-modal-card {
+  width: min(680px, 100%);
+}
+
+.modal-form-padding {
+  padding: 22px 24px 24px;
+}

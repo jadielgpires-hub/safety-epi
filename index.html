@@ -136,7 +136,7 @@
       </nav>
 
       <div class="sidebar-footer">
-        <span>V1.0 — Colaboradores</span>
+        <span>V1.0 — Vínculo de usuários</span>
       </div>
     </aside>
 
@@ -213,14 +213,14 @@
           <article class="section-card">
             <div class="section-heading">
               <div>
-                <span class="eyebrow">PRÓXIMA ETAPA</span>
-                <h3>Cadastro de colaboradores</h3>
+                <span class="eyebrow">ETAPA ATUAL</span>
+                <h3>Vínculo de usuários</h3>
               </div>
             </div>
-            <p class="section-copy">A próxima construção será o cadastro de colaboradores e o vínculo entre o registro do colaborador e a conta de acesso ao sistema.</p>
+            <p class="section-copy">O cadastro de colaboradores está aprovado. Agora vinculamos cada conta de acesso ao respectivo registro de colaborador.</p>
             <div class="notice-box">
               <strong>Regra já definida</strong>
-              <span>Todos os perfis terão acesso à aba Colaboradores, respeitando as permissões de cada perfil.</span>
+              <span>Todo usuário do sistema também deverá estar vinculado a um colaborador da Safety.</span>
             </div>
           </article>
         </div>
@@ -268,6 +268,48 @@
             <div class="empty-state-icon">◉</div>
             <strong>Nenhum colaborador cadastrado</strong>
             <span>Use o botão Novo colaborador para iniciar o cadastro.</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="users-panel" class="content-panel hidden">
+        <div class="module-header">
+          <div>
+            <span class="eyebrow">ADMINISTRAÇÃO DE ACESSO</span>
+            <h2>Usuários</h2>
+            <p>Vincule cada conta de acesso ao respectivo colaborador. Nesta etapa, não estamos criando novas contas ainda.</p>
+          </div>
+        </div>
+
+        <div class="module-toolbar">
+          <div class="search-field">
+            <span aria-hidden="true">⌕</span>
+            <input id="users-search" type="search" placeholder="Pesquisar por nome, e-mail, perfil ou colaborador" autocomplete="off" />
+          </div>
+          <span id="users-summary" class="module-summary">Carregando...</span>
+        </div>
+
+        <div class="table-card">
+          <div class="table-scroll">
+            <table class="data-table users-table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>E-mail</th>
+                  <th>Perfil</th>
+                  <th>Colaborador vinculado</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body"></tbody>
+            </table>
+          </div>
+
+          <div id="users-empty" class="empty-state">
+            <div class="empty-state-icon">⚙</div>
+            <strong>Nenhum usuário cadastrado</strong>
+            <span>Os usuários com acesso ao sistema aparecerão aqui.</span>
           </div>
         </div>
       </section>
@@ -340,6 +382,49 @@
           <button id="collaborator-save-button" class="modal-primary-button" type="submit">
             <span class="button-label">Salvar colaborador</span>
           </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="user-link-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="user-link-modal-title">
+    <div class="modal-card compact-modal-card">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">USUÁRIO</span>
+          <h2 id="user-link-modal-title">Vincular usuário ao colaborador</h2>
+        </div>
+        <button id="close-user-link-modal" class="modal-close" type="button" aria-label="Fechar">×</button>
+      </div>
+
+      <form id="user-link-form" class="modal-form-padding">
+        <input id="user-link-id" type="hidden" />
+        <div class="form-grid">
+          <div class="field-group">
+            <label for="user-link-name">Nome da conta</label>
+            <input id="user-link-name" type="text" disabled />
+          </div>
+          <div class="field-group">
+            <label for="user-link-email">E-mail</label>
+            <input id="user-link-email" type="email" disabled />
+          </div>
+          <div class="field-group">
+            <label for="user-link-role">Perfil de acesso</label>
+            <input id="user-link-role" type="text" disabled />
+          </div>
+          <div class="field-group">
+            <label for="user-link-collaborator">Colaborador correspondente *</label>
+            <select id="user-link-collaborator" required>
+              <option value="">Selecione o colaborador</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="user-link-message" class="message hidden" role="alert"></div>
+
+        <div class="modal-footer">
+          <button id="cancel-user-link-modal" class="modal-secondary-button" type="button">Cancelar</button>
+          <button id="user-link-save-button" class="modal-primary-button" type="submit">Salvar vínculo</button>
         </div>
       </form>
     </div>
