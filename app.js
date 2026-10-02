@@ -169,7 +169,18 @@ function handleAction(action,id){const map={
   "pdf-work":()=>generateWorkPdf($("#report-work-summary")?.value).catch(e=>showToast(e.message))
 };if(map[action])map[action]();}
 
-document.addEventListener("click",e=>{const close=e.target.closest("[data-close-modal]");if(close){if(e.target.matches(".modal-backdrop")||e.target.closest("button"))closeModal();return;}const nav=e.target.closest("[data-nav]");if(nav){navigate(nav.dataset.nav);return;}const a=e.target.closest("[data-action]");if(a&&!a.disabled){handleAction(a.dataset.action,a.dataset.id||"");}});
+document.addEventListener("click",e=>{
+  // Fecha o modal somente quando o usuário clica diretamente no fundo
+  // ou em um botão explicitamente marcado para fechar. Não use closest()
+  // no backdrop: isso capturava TODOS os botões do modal, inclusive Salvar.
+  if(e.target.matches(".modal-backdrop")){closeModal();return;}
+  const closeButton=e.target.closest("button[data-close-modal]");
+  if(closeButton){closeModal();return;}
+  const nav=e.target.closest("[data-nav]");
+  if(nav){navigate(nav.dataset.nav);return;}
+  const a=e.target.closest("[data-action]");
+  if(a&&!a.disabled){handleAction(a.dataset.action,a.dataset.id||"");}
+});
 ui.menuToggle.onclick=()=>{ui.sidebar.classList.toggle("open");ui.backdrop.classList.toggle("hidden")};ui.backdrop.onclick=()=>{ui.sidebar.classList.remove("open");ui.backdrop.classList.add("hidden")};ui.togglePassword.onclick=()=>{ui.password.type=ui.password.type==="password"?"text":"password"};
 ui.loginForm.onsubmit=async e=>{e.preventDefault();ui.loginMessage.className="message hidden";ui.loginButton.disabled=true;try{await signInWithEmailAndPassword(auth,ui.email.value.trim(),ui.password.value);}catch(err){ui.loginMessage.textContent=authMessage(err);ui.loginMessage.className="message error";ui.loginButton.disabled=false;}};
 ui.logout.onclick=async()=>{stopData();await signOut(auth)};

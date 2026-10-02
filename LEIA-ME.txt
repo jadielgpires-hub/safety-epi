@@ -1,52 +1,24 @@
-SAFETY EPI — V1 COMPLETA
-========================
+SAFETY EPI — V1.1 REVISADA
 
-Versão integrada para bateria de testes.
+Principais correções e melhorias desta revisão:
+- Regras do Firestore simplificadas e alinhadas aos perfis Administrador, Master, Gestor e Colaborador.
+- Mensagens de erro de gravação agora mostram a causa real quando o Firestore negar a operação.
+- Master e Gestor acessam toda a operação, exceto Usuários. Usuários é exclusivo do Administrador.
+- KITs são genéricos e possuem categoria/finalidade livre (acesso por cordas, resgate, primeiros socorros, ferramentas etc.).
+- Inspeções possuem Resultado e Destinação/Ação pós-inspeção, atualizando o status do equipamento.
+- Movimentações aceitam vários itens em um único conjunto e geram uma única assinatura.
+- Mobilização agrupa EPIs, KITs e cordas em uma única assinatura.
+- QR Code permanece disponível por equipamento após o cadastro, abrindo a rastreabilidade pela TAG.
+- Auditoria recebeu pesquisa e filtros.
+- Dashboard recebeu alertas de inspeção, quarentena, devolução e estoque baixo.
+- UID de usuário existente não é editável; e-mail existente é de referência; Administrador não pode ser rebaixado/inativado pelo app.
 
-MÓDULOS
-- Dashboard
-- Colaboradores
-- Obras
-- EPIs
-- Equipamentos rastreáveis e cordas
-- KITs
-- Estoque
-- Inspeções
-- Movimentações e assinatura eletrônica
-- Mobilização e desmobilização por obra
-- Relatórios PDF (ficha completa, ficha por obra, rastreabilidade e resumo da obra)
-- QR Code de equipamento
-- Usuários / vínculos / perfis
-- Auditoria
+INSTALAÇÃO / ATUALIZAÇÃO
+1. Firebase Console > Firestore > Regras: substitua TODO o conteúdo pelas regras do arquivo firestore.rules e clique em Publicar.
+2. GitHub > repositório safety-epi: substitua index.html, style.css, app.js e firestore.rules pelos arquivos desta pasta.
+3. Mantenha assets/logo-safety.png.
+4. Aguarde o GitHub Pages publicar.
+5. Abra o app e pressione Ctrl+F5.
 
-PERFIS
-- Administrador: acesso total e criação de perfis de usuário.
-- Master: acesso operacional completo; pode visualizar usuários e alterar vínculo/status, mas não criar perfis nem mudar função.
-- Gestor: gestão operacional; sem módulo Usuários.
-- Colaborador: visualiza o próprio cadastro, suas movimentações e relatórios próprios; assina recebimentos/devoluções.
-
-IMPORTANTE SOBRE NOVOS USUÁRIOS
-A V1 não cria contas do Firebase Authentication pelo navegador. Para novo usuário:
-1. Criar a conta em Firebase Console > Authentication > Usuários.
-2. Copiar o UID.
-3. No Safety EPI, Administrador > Usuários > Novo perfil de usuário.
-4. Informar UID, nome, e-mail, perfil e colaborador correspondente.
-
-NOTIFICAÇÃO DA V1
-As pendências de assinatura aparecem dentro do sistema, no Dashboard e em Movimentações. Push/e-mail externo não faz parte desta V1.
-
-PDF
-Os PDFs usam o padrão visual e os dados corporativos dos formulários atuais:
-- SE-FRM-SST-004 — Ficha de entrega, recebimento e controle de EPI e uniformes.
-- SE-FRM-AC-002 — Rastreabilidade de equipamentos de acesso por cordas.
-
-PUBLICAÇÃO
-Substituir no GitHub os arquivos:
-- index.html
-- style.css
-- app.js
-- firestore.rules
-- LEIA-ME.txt
-- assets/logo-safety.png (somente se necessário)
-
-Antes de testar, publicar também o conteúdo de firestore.rules em Firebase > Firestore > Regras.
+IMPORTANTE
+Publique firestore.rules ANTES de testar qualquer gravação. Se ainda houver permission-denied, o próprio formulário mostrará essa mensagem explicitamente.

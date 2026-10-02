@@ -1,0 +1,20 @@
+SAFETY EPI — HOTFIX V1.1.1
+
+Correção principal:
+- Corrigido o manipulador global de clique dos modais.
+- Na V1.1, o backdrop do modal possuía data-close-modal e o código usava closest("[data-close-modal]").
+- Como todo botão do modal está dentro do backdrop, qualquer clique em Salvar era interpretado como fechamento do modal antes da ação padrão de submit.
+- Isso impedia a execução dos handlers de submit e, portanto, nenhuma chamada addDoc/updateDoc chegava ao Firestore.
+
+Impacto corrigido:
+- Novo/editar colaborador
+- Obras
+- EPIs
+- Equipamentos/cordas
+- KITs
+- Estoque
+- Inspeções
+- Perfis de usuário
+- Demais formulários com submit dentro de modal
+
+As regras do Firestore da V1.1 permanecem válidas e não precisam mudar por causa deste hotfix.

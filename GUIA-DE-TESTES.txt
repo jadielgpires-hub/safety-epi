@@ -1,27 +1,32 @@
-SAFETY EPI — GUIA DE TESTES V1
-==============================
+GUIA DE TESTES — V1.1 REVISADA
 
-Registrar cada etapa como: APROVADO / REPROVADO / AJUSTE DE USABILIDADE.
+FASE A — GRAVAÇÃO BASE
+01. Login Administrador.
+02. Criar colaborador e confirmar persistência após F5.
+03. Editar colaborador e confirmar persistência após F5.
+04. Vincular Administrador ao colaborador e confirmar persistência.
+05. Criar obra, EPI e equipamento.
 
-01. LOGIN E SESSÃO
-02. COLABORADORES
-03. USUÁRIOS E VÍNCULOS
-04. OBRAS
-05. EPIs
-06. EQUIPAMENTOS E CORDAS
-07. KITs
-08. ESTOQUE
-09. INSPEÇÕES
-10. MOVIMENTAÇÃO INDIVIDUAL
-11. PERFIL COLABORADOR E ASSINATURA
-12. MOBILIZAÇÃO POR OBRA
-13. DEVOLUÇÃO / DESMOBILIZAÇÃO
-14. PDF — FICHA COMPLETA DE EPI
-15. PDF — FICHA DE EPI POR OBRA
-16. PDF — RASTREABILIDADE
-17. PDF — RESUMO DA OBRA
-18. QR CODE
-19. PERMISSÕES MASTER
-20. PERMISSÕES GESTOR
-21. AUDITORIA
-22. TESTE GERAL DE REGRESSÃO
+FASE B — OPERAÇÃO
+06. Registrar entrada de estoque do EPI.
+07. Criar KIT genérico, categoria livre, e incluir equipamento.
+08. Registrar inspeção e testar Destinação (Quarentena / Liberado etc.).
+09. Criar movimentação com mais de um item.
+10. Criar conta Colaborador no Firebase Authentication, perfil no app e vínculo.
+11. Entrar como Colaborador e assinar a movimentação uma única vez.
+12. Confirmar que todos os itens do grupo ficaram assinados.
+13. Testar devolução agrupada.
+14. Testar QR Code do equipamento.
+
+FASE C — OBRA / DOCUMENTOS
+15. Mobilizar colaborador em obra com EPI + KIT + corda.
+16. Assinar a mobilização.
+17. Gerar ficha completa, ficha por obra e rastreabilidade.
+18. Desmobilizar e assinar devolução.
+19. Conferir Auditoria e filtros.
+20. Conferir Dashboard / alertas.
+
+FASE D — PERFIS
+21. Master: tudo exceto Usuários.
+22. Gestor: tudo exceto Usuários.
+23. Colaborador: somente próprio cadastro/ficha, movimentações e assinaturas/relatórios próprios.

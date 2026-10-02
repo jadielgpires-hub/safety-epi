@@ -1,0 +1,44 @@
+SAFETY EPI — ALTERAÇÕES V1.1 REVISADA
+
+1. Gravação / Firestore
+- Regras reestruturadas e simplificadas.
+- Mensagens de erro de gravação passam a exibir a causa real.
+
+2. Perfis
+- Administrador: acesso total, inclusive Usuários.
+- Master: toda a operação, sem Usuários.
+- Gestor: toda a operação, sem Usuários.
+- Colaborador: próprio cadastro/ficha, movimentações, assinaturas e relatórios próprios.
+
+3. KITs
+- KIT genérico com categoria/finalidade livre.
+- Permite acesso por cordas, resgate, primeiros socorros, ferramentas e outras finalidades.
+
+4. Inspeções
+- Resultado separado de Destinação/Ação pós-inspeção.
+- Destinações: Liberado para uso, Quarentena, Aguardando manutenção/avaliação, Retirado de serviço e Descartado.
+- Atualização automática do status do equipamento conforme destinação.
+
+5. Movimentações / Assinaturas
+- Uma movimentação pode conter vários EPIs, KITs e equipamentos/cordas.
+- Uma única assinatura confirma todos os itens do conjunto.
+- Devolução agrupada também usa uma única assinatura.
+
+6. Obras
+- Mobilização usa um único grupo de itens e uma única assinatura.
+- Desmobilização gera devolução agrupada para itens rastreáveis.
+
+7. QR Code
+- QR por equipamento/TAG, com acesso direto à rastreabilidade.
+
+8. Auditoria
+- Pesquisa livre.
+- Filtros por data, usuário e entidade.
+
+9. Usuários
+- UID bloqueado após criação.
+- E-mail existente tratado como referência e não editável no app.
+- Administrador protegido contra rebaixamento/inativação no app.
+
+10. Dashboard
+- Indicadores de aguardando inspeção, quarentena/retirados, devoluções pendentes e estoque baixo.
