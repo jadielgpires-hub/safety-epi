@@ -1,0 +1,49 @@
+SAFETY EPI V2 — RC2
+
+BASE
+- Derivada da V2 RC1 homologada.
+- Não substitui a produção V1.2 FINAL.
+- Não requer alteração no Firebase, Firestore Rules ou Cloudflare Worker nesta etapa.
+
+ARQUIVOS PARA GITHUB (raiz do repositório safety-epi)
+- v2-rc2.html
+- app-v2-rc2.js
+- style-v2-rc2.css
+
+URL DE HOMOLOGAÇÃO
+https://epi.safetyequipamentos.com/v2-rc2.html
+
+NOVIDADES RC2
+1. Código interno automático e editável para EPIs: EPI-001, EPI-002...
+2. Código interno automático por tipo de item rastreável:
+   - EQP-001 = equipamento
+   - COR-001 = corda
+   - FER-001 = ferramenta
+3. Categoria Ferramenta no cadastro de equipamentos.
+4. KIT sugere KIT-001, KIT-002... mantendo edição manual.
+5. Validação local contra código interno duplicado.
+6. EPI: lote, data de fabricação, validade física e validade do CA.
+7. Equipamento/corda/ferramenta: CA, validade do CA, lote, data de fabricação e validade física.
+8. Pesquisa ampliada por código, descrição, CA, TAG, lote, série, fabricante e modelo.
+9. Rastreabilidade do equipamento mostra os novos campos.
+10. Alteração posterior de código gera evento específico em Auditoria.
+11. Dados antigos continuam válidos. Registros sem código só recebem um código quando forem editados e salvos.
+
+IMPORTANTE
+- A validade do CA e a validade física do produto permanecem campos distintos.
+- A consulta automática do CA em base oficial NÃO faz parte desta RC2; será integrada depois de homologarmos primeiro a estrutura de cadastro.
+- Não editar index.html, app.js ou style.css da produção.
+
+ROTEIRO DE HOMOLOGAÇÃO PREVISTO
+A. Login e integridade dos dados existentes.
+B. Novo EPI com código sugerido.
+C. Código editável e bloqueio de duplicidade.
+D. Novos campos de CA/lote/fabricação/validade.
+E. Novo equipamento e troca automática de prefixo por tipo.
+F. Ferramenta FER.
+G. Corda COR.
+H. Pesquisa pelos novos campos.
+I. Alteração posterior do código e Auditoria.
+J. KIT com sugestão automática.
+
+Os testes devem ser realizados um por vez.
