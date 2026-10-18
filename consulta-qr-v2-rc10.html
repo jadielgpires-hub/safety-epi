@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#073B73" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <meta name="referrer" content="no-referrer" />
+  <title>Consulta de equipamento | Safety Equipamentos</title>
+  <link rel="icon" href="./assets/favicon.png" type="image/png" />
+  <link rel="stylesheet" href="./style-consulta-qr-v2-rc10.css" />
+</head>
+<body>
+  <main class="public-shell">
+    <header class="public-header"><img src="./assets/logo-safety.png" alt="Safety Equipamentos" />
+      <div><span class="eyebrow">SAFETY EQUIPAMENTOS</span><h1>Consulta técnica por QR Code</h1><p>Informações públicas controladas do equipamento</p></div>
+    </header>
+    <section id="qr-loading" class="public-card" role="status">Consultando o registro...</section>
+    <section id="qr-error" class="public-card" hidden role="alert"><h2>Consulta indisponível</h2><p>O QR Code não está ativo, foi revogado ou não pôde ser consultado. Solicite à Safety Equipamentos a identificação atualizada.</p></section>
+    <section id="qr-result" class="public-card" hidden>
+      <div class="public-heading"><div><span class="eyebrow">REGISTRO DO ITEM</span><h2 id="item-title"></h2><p id="item-tag"></p></div><span id="usage-badge" class="usage-badge"></span></div>
+      <dl id="item-details" class="details"></dl>
+      <p id="refresh-date" class="update-note"></p>
+      <div class="public-warning"><strong>Consulta informativa</strong><p>Dados conforme última sincronização. Esta página não constitui inspeção, certificado, autorização de uso ou substituto dos controles internos. Em caso de dúvida, não utilize o equipamento e consulte o responsável técnico.</p></div>
+    </section>
+    <footer>Safety Equipamentos • Consulta restrita aos campos autorizados</footer>
+  </main>
+  <script type="module" src="./consulta-qr-v2-rc10.js"></script>
+</body>
+</html>
