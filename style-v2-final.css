@@ -113,3 +113,128 @@
 
 /* RC10 — consulta QR pública controlada */
 .qr-public-status{margin:12px 0}.qr-box canvas{display:block;max-width:100%;height:auto;margin:14px auto}.qr-link{overflow-wrap:anywhere;word-break:break-word}.qr-box{text-align:center}
+
+/* ==========================================================================
+   SAFETY EPI V2 — ADAPTACAO RESPONSIVA PARA CELULARES
+   Atualizacao exclusiva de apresentacao. Sem alterar JS, HTML ou Firebase.
+   Tabelas passam a cartoes; campos, acoes e janelas cabem na tela.
+   Desktop (largura acima de 767px) permanece com o layout homologado.
+   ========================================================================== */
+@media screen and (max-width:767px) {
+  html,body {width:100%;max-width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%;}
+  #app-view,.app-main,#module-root {width:100%;min-width:0;max-width:100%;}
+  .content-panel {padding:18px 12px 50px;min-width:0;}
+  .topbar {height:76px;padding:0 12px;gap:10px;}
+  .topbar-left {flex:1 1 auto;min-width:0;gap:10px;}
+  .topbar-left>div {min-width:0;}
+  .topbar-kicker {font-size:9px;letter-spacing:.1em;}
+  .topbar h1 {font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  .menu-toggle {flex:0 0 38px;min-width:38px;min-height:42px;}
+  .user-area {flex:0 0 auto;gap:7px;}
+  .user-avatar {height:36px;width:36px;font-size:13px;}
+  .logout-button {min-height:40px;padding:7px 10px;}
+  .sidebar {width:min(290px,85vw);}
+  .welcome-card,.section-card,.metric-card {padding:17px;min-width:0;}
+  .welcome-card {gap:12px;flex-wrap:wrap;}
+  .welcome-card h2 {font-size:22px;}
+  .section-card,.mini-card,.module-card {min-width:0;max-width:100%;}
+  .metric-grid,.card-grid,.card-grid.compact {grid-template-columns:1fr;}
+  .module-header {align-items:stretch;gap:14px;margin-bottom:15px;}
+  .module-header h2 {font-size:25px;line-height:1.2;}
+  .module-header p {line-height:1.45;overflow-wrap:anywhere;}
+  .module-header .module-primary-button {width:100%;min-height:46px;}
+  .module-toolbar {display:flex;flex-direction:column;align-items:stretch;gap:9px;padding:0;}
+  .module-toolbar .toolbar-spacer {display:none;}
+  .module-toolbar>.search-input,.module-toolbar>.filter-select,
+  .module-toolbar>input,.module-toolbar>select {width:100%;min-width:0;max-width:100%;min-height:44px;flex:0 0 auto;}
+  .module-toolbar>.muted.small {text-align:right;}
+  .module-card>.module-toolbar {padding:14px 12px 5px;}
+  .module-card {overflow:hidden;border-radius:14px;}
+  .work-scope-cell {max-width:none;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;}
+  .form-grid,.form-grid.three,.three-column,.four-column {grid-template-columns:minmax(0,1fr);}
+  .form-field,.form-field.full,.detail-item,.allocation-box,.tool-return-row {min-width:0;}
+  .form-field input,.form-field select,.form-field textarea {min-width:0;max-width:100%;font-size:16px;}
+  .module-toolbar input,.module-toolbar select {font-size:16px;}
+  .detail-item strong,.mini-card strong {overflow-wrap:anywhere;}
+  .tool-return-row {grid-template-columns:minmax(0,1fr);}
+  .tool-return-row select,.tool-return-row input {max-width:100%;}
+  .signature-canvas {max-width:100%;height:220px;}
+  .signature-tools {flex-wrap:wrap;}
+  .qr-box {padding:12px;max-width:100%;}
+  .qr-box canvas {max-width:min(260px,100%);height:auto;}
+  .modal-backdrop {padding:0;}
+  .modal-card,.modal-card.wide,.modal-card.narrow {
+    width:100%;height:100dvh;max-height:100dvh;border-radius:0;
+    overscroll-behavior:contain;overflow-x:hidden;
+  }
+  .modal-header {padding:15px 16px;gap:9px;}
+  .modal-header h3 {font-size:20px;overflow-wrap:anywhere;}
+  .modal-close {flex:0 0 40px;height:40px;}
+  .modal-body {padding:16px 12px;min-width:0;}
+  .modal-footer {padding:12px;gap:8px;flex-wrap:wrap;position:sticky;bottom:0;background:#fff;z-index:2;}
+  .modal-footer .module-primary-button,.modal-footer .secondary-button,
+  .modal-footer .danger-button {min-width:0;flex:1 1 145px;min-height:44px;white-space:normal;}
+  .checkbox-list {max-width:100%;}
+  .toast {left:12px;right:12px;bottom:12px;text-align:center;overflow-wrap:anywhere;}
+
+  /* Tabelas extensas: todos os campos e botoes ficam visiveis, sem rolagem lateral. */
+  .table-wrap {width:100%;max-width:100%;overflow:visible;}
+  table.data-table {display:block;width:100%;min-width:0;max-width:100%;border-collapse:separate;table-layout:auto;}
+  table.data-table thead {position:absolute!important;clip:rect(0 0 0 0);clip-path:inset(50%);width:1px;height:1px;margin:-1px;overflow:hidden;white-space:nowrap;}
+  table.data-table tbody {display:grid;grid-template-columns:minmax(0,1fr);gap:12px;padding:12px;background:#f5f7fa;}
+  table.data-table tbody tr {display:block;min-width:0;padding:6px 12px;border:1px solid #dce4ec;border-radius:12px;background:#fff;box-shadow:0 2px 6px rgba(7,59,115,.04);}
+  table.data-table tbody tr:hover td {background:transparent;}
+  table.data-table tbody td {display:grid;grid-template-columns:minmax(0,37%) minmax(0,63%);align-items:start;gap:8px;
+    min-width:0;max-width:100%;padding:11px 1px;border-bottom:1px solid #eef2f6;
+    overflow-wrap:anywhere;white-space:normal;font-size:13px;line-height:1.4;}
+  table.data-table tbody td:last-child {border-bottom:0;}
+  table.data-table tbody td::before {content:var(--cell-label,"");font-size:10px;line-height:1.4;font-weight:800;
+    text-transform:uppercase;letter-spacing:.035em;color:#617387;}
+  table.data-table tbody td:nth-child(1) {--cell-label:var(--col-1,"Item");}
+  table.data-table tbody td:nth-child(2) {--cell-label:var(--col-2,"Detalhe");}
+  table.data-table tbody td:nth-child(3) {--cell-label:var(--col-3,"Detalhe");}
+  table.data-table tbody td:nth-child(4) {--cell-label:var(--col-4,"Detalhe");}
+  table.data-table tbody td:nth-child(5) {--cell-label:var(--col-5,"Detalhe");}
+  table.data-table tbody td:nth-child(6) {--cell-label:var(--col-6,"Detalhe");}
+  table.data-table tbody td:nth-child(7) {--cell-label:var(--col-7,"Detalhe");}
+  table.data-table tbody td:nth-child(8) {--cell-label:var(--col-8,"Detalhe");}
+  table.data-table tbody td:nth-child(9) {--cell-label:var(--col-9,"Detalhe");}
+  table.data-table tbody td:has(.table-action-button) {display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  table.data-table tbody td:has(.table-action-button)::before {flex:0 0 100%;}
+  table.data-table .table-action-button {display:inline-flex;align-items:center;justify-content:center;
+    margin:0;min-height:40px;flex:1 1 auto;padding:9px 11px;white-space:normal;text-align:center;}
+  table.data-table tbody td[colspan] {display:block;padding:20px 9px;text-align:center;}
+  table.data-table tbody td[colspan]::before {content:none;}
+  table.data-table .status-badge {max-width:100%;white-space:normal;text-align:left;}
+
+  /* Cada modulo tem titulos corretos; nao usamos rotulos genericos para seus dados. */
+  table.data-table:has(#collab-body) {--col-1:"Nome";--col-2:"Matrícula";--col-3:"Função";--col-4:"Setor / contrato";--col-5:"Admissão";--col-6:"Status";--col-7:"Ações";}
+  table.data-table:has(#work-body) {--col-1:"Obra";--col-2:"Cliente";--col-3:"Escopo";--col-4:"Exposições previstas";--col-5:"Período";--col-6:"Status";--col-7:"Ações";}
+  table.data-table:has(#epi-body) {--col-1:"Código";--col-2:"EPI / uniforme";--col-3:"CA";--col-4:"Validade CA";--col-5:"Lote";--col-6:"Fabricante / modelo";--col-7:"Status";--col-8:"Ações";}
+  table.data-table:has(#equipment-body) {--col-1:"Código";--col-2:"TAG";--col-3:"Item";--col-4:"Tipo";--col-5:"CA";--col-6:"Fabricante / modelo";--col-7:"Série";--col-8:"Status";--col-9:"Ações";}
+  table.data-table:has(#kit-body) {--col-1:"Código";--col-2:"Categoria";--col-3:"Descrição";--col-4:"Componentes";--col-5:"Status";--col-6:"Ações";}
+  table.data-table:has(#inspector-body) {--col-1:"Nome";--col-2:"Função";--col-3:"Qualificação";--col-4:"Registro";--col-5:"Escopo autorizado";--col-6:"Validade";--col-7:"Status";--col-8:"Ação";}
+  table.data-table:has(#pending-inspection-body) {--col-1:"Código";--col-2:"TAG";--col-3:"Equipamento";--col-4:"Tipo";--col-5:"Motivo pos-uso";--col-6:"Prioridade";--col-7:"Ação";}
+  table.data-table:has(#movement-body) {--col-1:"Data";--col-2:"Colaborador";--col-3:"Itens";--col-4:"Obra";--col-5:"Movimento";--col-6:"Assinatura";--col-7:"Estado";--col-8:"Ações";}
+  table.data-table:has(#request-body) {--col-1:"Data";--col-2:"Colaborador";--col-3:"Pedido";--col-4:"Item";--col-5:"Motivo";--col-6:"Status";--col-7:"Ações";}
+  table.data-table:has(#audit-body) {--col-1:"Data";--col-2:"Usuário";--col-3:"Evento";--col-4:"Entidade";--col-5:"Detalhes";}
+  #module-root:has(.card-grid) table.data-table {--col-1:"Data";--col-2:"EPI";--col-3:"Movimento";--col-4:"Quantidade";--col-5:"Obra";--col-6:"Observação";}
+  #module-root:has(.success-strip) table.data-table {--col-1:"Nome";--col-2:"E-mail";--col-3:"Perfil";--col-4:"Colaborador vinculado";--col-5:"Status";--col-6:"Ações";}
+  #module-root:has(#pending-inspection-body)>.module-card:not(:has(#pending-inspection-body)) table.data-table {
+    --col-1:"Data";--col-2:"TAG";--col-3:"Equipamento";--col-4:"Tipo";--col-5:"Resultado";
+    --col-6:"Destinação";--col-7:"Próxima inspeção";--col-8:"Responsável";--col-9:"Ações";
+  }
+  .modal-card:has([data-action="pdf-packing"]) table.data-table {
+    --col-1:"Data";--col-2:"Código";--col-3:"Item";--col-4:"Tipo";--col-5:"Quantidade";
+    --col-6:"TAG / Serie / CA";--col-7:"Situação";--col-8:"Responsável";
+  }
+}
+
+@media screen and (max-width:359px) {
+  .content-panel {padding-inline:9px;}
+  .topbar {padding-inline:8px;gap:5px;}
+  .user-avatar {display:none;}
+  table.data-table tbody {padding:9px;}
+  table.data-table tbody tr {padding:5px 10px;}
+  table.data-table tbody td {grid-template-columns:minmax(0,35%) minmax(0,65%);}
+}
