@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="theme-color" content="#073B73"><title>Safety EPI — Diagnóstico de devolução</title>
+<style>
+:root { font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif; color:#123455;background:#f1f5f9; }
+* {box-sizing:border-box} body{margin:0} header{background:#073B73;color:white;padding:19px 17px;border-bottom:4px solid #D4A017} header strong{display:block;font-size:20px} header small{display:block;margin-top:5px;color:#dbe7f7} main{max-width:780px;margin:0 auto;padding:18px 14px 42px} .card{background:white;border:1px solid #d6e0ea;border-radius:14px;padding:17px;margin-bottom:14px;box-shadow:0 2px 5px #183c5c09} h2{font-size:18px;margin:0 0 12px} h3{font-size:16px;margin:0 0 8px} p{line-height:1.55} .muted,small{color:#526579} label{font-weight:650;display:block;margin:9px 0 6px} input,select{width:100%;min-height:48px;padding:10px;border:1px solid #a9bfce;border-radius:9px;font:inherit;background:#fff;color:#123455} button{font:inherit;border:0;border-radius:9px;background:#073B73;color:#fff;min-height:46px;padding:11px 17px;cursor:pointer;margin-top:12px} button:disabled{background:#8599a8;cursor:wait} button.secondary{background:#e7edf4;color:#123455} .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap} .notice{border-radius:10px;background:#fff6dc;border:1px solid #ecce70;padding:10px 12px} .ok{border-left:5px solid #1a9e67}.fail{border-left:5px solid #c64242}.info{border-left:5px solid #c59735}.check{padding:11px 12px;border:1px solid #e1e9f2;border-radius:9px;margin-top:8px;background:#fcfdff}.check b{display:block;margin-bottom:4px}.check span{color:#4b5f72;font-size:14px;line-height:1.5;display:block} .hidden{display:none} .error{color:#9b1b22} #summary{white-space:pre-wrap;line-height:1.5;font-size:14px;background:#f6f8fc;border-radius:9px;padding:12px} .progress{margin:8px 0;color:#526579}
+</style>
+</head>
+<body>
+<header><strong>Safety Equipamentos</strong><small>Diagnóstico de devolução — V2 Final • Somente leitura</small></header>
+<main>
+<div class="card notice"><strong>Esta ferramenta não modifica nenhum registro.</strong><p>Use somente com uma conta Master, Gestor ou Administrador. Ela consulta apenas dados necessários para identificar a falha de devolução. Não informe senhas nem números de documentos neste chat.</p></div>
+<section id="login" class="card hidden"><h2>Entrar como Master</h2><form id="login-form"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required><label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required><button id="login-button" type="submit">Entrar e verificar</button></form></section>
+<section class="card"><h2>Diagnóstico da devolução</h2><div id="account" class="muted">Verificando sua sessão...</div><div id="chooser" class="hidden"><label for="mov">Movimentação de devolução pendente</label><select id="mov"><option value="">Selecione uma devolução</option></select><button id="run" type="button">Analisar sem alterar</button></div><p id="status" class="progress" aria-live="polite"></p></section>
+<section id="results" class="card hidden"><h2>Resultado da análise</h2><div id="checks"></div><h3 style="margin-top:16px">Resumo para enviar no ChatGPT</h3><div id="summary"></div><button class="secondary" id="copy" type="button">Copiar resumo</button></section>
+<div class="muted" style="font-size:12px;text-align:center">Após a correção, exclua este arquivo de diagnóstico do GitHub.</div>
+</main>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import {getFirestore,doc,getDoc,collection,getDocs} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+const config={apiKey:"AIzaSyDxHYAPM-1LthEfb-FA1_gTEv1A8uL5l3U",authDomain:"safety-epi.firebaseapp.com",projectId:"safety-epi",storageBucket:"safety-epi.firebasestorage.app",messagingSenderId:"450999995915",appId:"1:450999995915:web:5ef379ac2785e17a41410e"};
+const app=initializeApp(config),auth=getAuth(app),db=getFirestore(app);
+const el=id=>document.getElementById(id); const esc=v=>String(v??"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':'&quot;',"'":'&#39;'}[c]));
+let groups=[];let allowed=false;let lastSummary="";
+function dateStr(v){if(!v)return "data não informada";try{return new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(v.toDate?v.toDate():new Date(v));}catch{return "data indisponível";}}
+function stateMsg(v){el('status').textContent=v;}
+async function getItem(col,id){if(!id)return null;try{const snap=await getDoc(doc(db,col,id));return snap.exists()?{id:snap.id,...snap.data()}:null;}catch(e){return {__readError:e?.code||e?.message||'Erro de leitura'};}}
+function groupKey(m){return m.grupoId||m.id;}
+async function initFor(user){if(!user){el('login').classList.remove('hidden');el('account').textContent='É necessário entrar com uma conta Master ou Gestor.';return;}
+ try{const profile=await getItem('usuarios',user.uid);if(!profile||profile.__readError||!['administrador','master','gestor'].includes(profile.role)||profile.ativo!==true)throw new Error('Somente a gestão pode consultar este diagnóstico.');allowed=true;el('login').classList.add('hidden');el('account').textContent='Sessão autenticada • Perfil '+profile.role;
+ const snap=await getDocs(collection(db,'movimentacoes'));const rows=snap.docs.map(x=>({id:x.id,...x.data()}));const pending=rows.filter(x=>x.assinaturaTipo==='devolucao'&&x.statusAssinatura==='pendente');const map=new Map();for(const x of pending){const k=groupKey(x);if(!map.has(k))map.set(k,[]);map.get(k).push(x)}groups=[...map.values()].sort((a,b)=>(b[0]?.criadoEm?.seconds||0)-(a[0]?.criadoEm?.seconds||0));const s=el('mov');s.innerHTML='<option value="">Selecione uma devolução</option>';
+ groups.forEach((g,i)=>{const opt=document.createElement('option');opt.value=String(i);opt.textContent=`${dateStr(g[0].criadoEm)} • ${g[0].colaboradorNome||'Colaborador'} • ${g.map(v=>v.itemDescricao).join(' + ').slice(0,110)}`;s.appendChild(opt);});el('chooser').classList.remove('hidden');stateMsg(groups.length?`${groups.length} grupo(s) de devolução pendente localizado(s).`:'Não foram encontradas devoluções pendentes.');
+ }catch(e){stateMsg('Não foi possível carregar: '+(e?.code||e.message||String(e)));}}
+const results=[];function record(title,ok,info,uncertain=false){results.push({title,ok,info,uncertain});}
+async function assess(g){if(!allowed||!g?.length)return;el('run').disabled=true;el('results').classList.remove('hidden');el('checks').innerHTML='';el('summary').textContent='Verificando...';results.length=0;stateMsg('Lendo as movimentações e os vínculos dos itens...');
+ try{const target=g[0].colaboradorId||'';record('Identificação da movimentação',Boolean(target),'Movimentação '+(target?'possui':'não possui')+' vínculo com colaborador.');
+ const countByDoc=new Map();const uses=(col,id)=>{const key=col+':'+id;countByDoc.set(key,(countByDoc.get(key)||0)+1)};
+ for(const x of g){record('Devolução pendente — '+(x.itemDescricao||x.tipoItem),x.statusAssinatura==='pendente'&&x.assinaturaTipo==='devolucao'&&x.estado==='aguardando_assinatura'&&x.colaboradorId===target,`Assinatura: ${x.statusAssinatura}; estado: ${x.estado}; tipo: ${x.tipoItem}.`);
+ if(x.movimentacaoOrigemId){uses('movimentacoes',x.movimentacaoOrigemId);const o=await getItem('movimentacoes',x.movimentacaoOrigemId);if(!o||o.__readError)record('Entrega original — '+(x.itemDescricao||x.tipoItem),false,o?.__readError?'Falha na leitura: '+o.__readError:'Documento da entrega não encontrado.');else {record('Entrega original — '+(x.itemDescricao||x.tipoItem),o.colaboradorId===target&&o.statusAssinatura==='assinado'&&o.estado==='em_posse',`Assinatura: ${o.statusAssinatura||'não informada'}; estado: ${o.estado||'não informado'}; vínculo com mesmo colaborador: ${o.colaboradorId===target?'SIM':'NÃO'}.`);}}
+ else record('Referência da entrega original',false,'Movimentação de devolução sem movimentacaoOrigemId.');
+ const col=x.tipoItem==='kit'?'kits':x.tipoItem==='equipamento'?'equipamentos':null;
+ if(col){uses(col,x.itemId);const r=await getItem(col,x.itemId);if(!r||r.__readError){record('Recurso principal — '+x.itemDescricao,false,r?.__readError?'Falha de leitura: '+r.__readError:'Documento não encontrado.');}else{const owner=r.responsavelColaboradorId||'';record('Responsável pelo recurso — '+x.itemDescricao,owner===target,`Status: ${r.status||'não informado'}; mesmo colaborador da movimentação: ${owner===target?'SIM':'NÃO'}; responsável preenchido: ${owner?'SIM':'NÃO'}.`);record('Status do recurso — '+x.itemDescricao,r.status==='Em uso',`Status registrado: ${r.status||'não informado'}.`);}}
+ if(x.tipoItem==='kit'){
+ for(const [i,c] of (x.componentesSnapshot||[]).entries()){
+ uses('equipamentos',c.id);const e=await getItem('equipamentos',c.id);const title='Componente '+(i+1)+' — '+(c.tag||c.equipamento||'item');if(!e||e.__readError){record(title,false,e?.__readError?'Falha de leitura: '+e.__readError:'Documento não encontrado.');continue;}record(title,Boolean(e.responsavelColaboradorId)&&e.responsavelColaboradorId===target&&e.status==='Em uso',`Status: ${e.status||'não informado'}; mesmo colaborador da movimentação: ${e.responsavelColaboradorId===target?'SIM':'NÃO'}; vínculo preenchido: ${e.responsavelColaboradorId?'SIM':'NÃO'}.`);
+ }
+ }
+ }
+ for(const [key,n] of countByDoc){if(n>1)record('Documento incluído mais de uma vez no lote',false,`${key.split(':')[0]} foi referenciado ${n} vezes nesta mesma devolução.`);}
+ const fails=results.filter(x=>!x.ok),checks=el('checks');checks.innerHTML='';for(const r of results){const div=document.createElement('div');div.className='check '+(r.ok?'ok':'fail');div.innerHTML='<b>'+(r.ok?'✓ ':'✗ ')+esc(r.title)+'</b><span>'+esc(r.info)+'</span>';checks.appendChild(div);}
+ if(!fails.length){const note=document.createElement('div');note.className='check info';note.innerHTML='<b>Verificações de dados passaram</b><span>Os vínculos e estados principais estão coerentes. Ainda é necessário conferir as regras efetivamente publicadas e eventuais condições adicionais; esta ferramenta não executa a escrita e não identifica qual regra o servidor rejeitou.</span>';checks.prepend(note);}
+ lastSummary='DIAGNÓSTICO DE DEVOLUÇÃO — SAFETY EPI V2\n'+'Verificações realizadas: '+results.length+'; falhas de dados identificadas: '+fails.length+'.\n'+(fails.length?fails.map(x=>'FALHA: '+x.title+' — '+x.info).join('\n'):'Vínculos e estados conferidos sem divergências visíveis. A permissão ainda precisa ser verificada no servidor.')+'\nLeitura apenas; nenhum registro foi alterado.';
+ el('summary').textContent=lastSummary;stateMsg('Diagnóstico finalizado. Nenhuma gravação foi realizada.');
+ }catch(e){stateMsg('Erro durante a análise: '+(e?.code||e.message||String(e)));el('summary').textContent='Não foi possível concluir o diagnóstico.';}finally{el('run').disabled=false;}}
+el('login-form').onsubmit=async e=>{e.preventDefault();el('login-button').disabled=true;stateMsg('Autenticando...');try{await signInWithEmailAndPassword(auth,el('email').value,el('password').value);}catch(err){stateMsg('Erro de login: '+(err?.code||'Falha de autenticação'));}finally{el('password').value='';el('login-button').disabled=false;}};
+el('run').onclick=()=>{const index=Number(el('mov').value);if(el('mov').value!=='')assess(groups[index]);else stateMsg('Escolha uma devolução pendente.');};el('copy').onclick=async()=>{try{await navigator.clipboard.writeText(lastSummary);el('copy').textContent='Resumo copiado';}catch{el('copy').textContent='Selecione e copie o texto acima';}};
+onAuthStateChanged(auth,user=>initFor(user));
+</script>
+</body>
+</html>
